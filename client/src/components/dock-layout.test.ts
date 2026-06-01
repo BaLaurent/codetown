@@ -89,10 +89,10 @@ describe('computeDockLayout — politique docké (étirée)', () => {
     expect(wide4.placements.map(p => p.id)).toEqual(['b', 'c', 'd']);
   });
 
-  it('maxWidth : le panneau gauche peut absorber la marge du voisin droit ; le plus à droite est figé', () => {
+  it('maxWidth : le panneau de droite peut absorber la marge de son voisin gauche ; le plus à gauche est figé', () => {
     const { placements } = computeDockLayout([tty('a'), tty('b')], {}, WIDE, 'docked', null);
-    expect(placements[0].maxWidth).toBeGreaterThan(placements[0].effectiveWidth);
-    expect(placements[1].maxWidth).toBe(placements[1].effectiveWidth); // rightmost: figé (pas de voisin droite)
+    expect(placements[0].maxWidth).toBe(placements[0].effectiveWidth); // leftmost: figé (pas de voisin gauche)
+    expect(placements[1].maxWidth).toBeGreaterThan(placements[1].effectiveWidth);
   });
 });
 
@@ -124,25 +124,31 @@ describe('computeDockLayout — maximize', () => {
   });
 });
 
-describe('redistributeWidth (resize split-pane, docké)', () => {
+describe('redistributeWidth (resize split-pane docké, poignée bord gauche → voisin gauche)', () => {
   const visible = ['tty:a', 'tty:b']; // gauche→droite
 
-  it('agrandir A vole la place à son voisin de droite B', () => {
-    const next = redistributeWidth(visible, { 'tty:a': 400, 'tty:b': 400 }, 'tty:a', 500);
-    expect(next['tty:a']).toBe(500);
+  it('agrandir B (bord gauche tiré à gauche) vole la place à son voisin de GAUCHE A', () => {
+    const next = redistributeWidth(visible, { 'tty:a': 400, 'tty:b': 400 }, 'tty:b', 500);
+    expect(next['tty:b']).toBe(500);
+    expect(next['tty:a']).toBe(300); // somme de la paire conservée (800)
+  });
+
+  it('rétrécir B (bord tiré à droite) redonne la place au voisin de gauche A (bidirectionnel)', () => {
+    const next = redistributeWidth(visible, { 'tty:a': 400, 'tty:b': 400 }, 'tty:b', 300);
     expect(next['tty:b']).toBe(300);
+    expect(next['tty:a']).toBe(500);
   });
 
-  it('ne fait pas passer le voisin sous MIN_WIDTH', () => {
-    const next = redistributeWidth(visible, { 'tty:a': 400, 'tty:b': 300 }, 'tty:a', 900);
-    expect(next['tty:b']).toBe(240);          // MIN_WIDTH
-    expect(next['tty:a']).toBe(400 + (300 - 240)); // n'a pris que ce que B pouvait céder
+  it('ne fait pas passer le voisin gauche sous MIN_WIDTH', () => {
+    const next = redistributeWidth(visible, { 'tty:a': 300, 'tty:b': 400 }, 'tty:b', 900);
+    expect(next['tty:a']).toBe(240);          // MIN_WIDTH plancher
+    expect(next['tty:b']).toBe(300 + 400 - 240); // n'a pris que ce que A pouvait céder (460)
   });
 
-  it('le panneau le plus à droite ne peut pas grandir (pas de voisin droite)', () => {
-    const next = redistributeWidth(visible, { 'tty:a': 400, 'tty:b': 400 }, 'tty:b', 600);
-    expect(next['tty:b']).toBe(400);
+  it('le panneau le plus à GAUCHE ne peut pas grandir (pas de voisin gauche)', () => {
+    const next = redistributeWidth(visible, { 'tty:a': 400, 'tty:b': 400 }, 'tty:a', 600);
     expect(next['tty:a']).toBe(400);
+    expect(next['tty:b']).toBe(400);
   });
 
   it('clé absente → renvoie le même objet (bail-out)', () => {
@@ -165,25 +171,25 @@ describe('computeDockHeight', () => {
 });
 
 describe('resizeDockedWidths (drag docké 1:1, convergent)', () => {
-  it('un drag effectif déplace ~1:1 et la somme effective reste constante (remplit la barre)', () => {
+  it('un drag effectif (panneau de droite) déplace ~1:1 et la somme effective reste constante', () => {
     const order = [tty('a'), tty('b')];
     const before = computeDockLayout(order, {}, 1600, 'docked', null).placements;
-    const a0 = before.find(p => p.id === 'a')!.effectiveWidth;
+    const b0 = before.find(p => p.id === 'b')!.effectiveWidth;
     const sumBefore = before.reduce((s, p) => s + p.effectiveWidth, 0);
 
-    const next = resizeDockedWidths(order, {}, 1600, null, 'tty:a', a0 + 100);
+    const next = resizeDockedWidths(order, {}, 1600, null, 'tty:b', b0 + 100);
     const after = computeDockLayout(order, next, 1600, 'docked', null).placements;
-    const a1 = after.find(p => p.id === 'a')!.effectiveWidth;
+    const b1 = after.find(p => p.id === 'b')!.effectiveWidth;
     const sumAfter = after.reduce((s, p) => s + p.effectiveWidth, 0);
 
-    expect(a1).toBe(a0 + 100);     // 1:1, pas d'overshoot
+    expect(b1).toBe(b0 + 100);     // 1:1, pas d'overshoot
     expect(sumAfter).toBe(sumBefore); // toujours == available (barre pleine)
   });
 
-  it('respecte MIN_WIDTH du voisin (ne le pousse pas en dessous)', () => {
+  it('respecte MIN_WIDTH du voisin gauche (ne le pousse pas en dessous)', () => {
     const order = [tty('a'), tty('b')];
-    const next = resizeDockedWidths(order, {}, 1600, null, 'tty:a', 5000); // drag énorme
+    const next = resizeDockedWidths(order, {}, 1600, null, 'tty:b', 5000); // drag énorme du panneau droit
     const after = computeDockLayout(order, next, 1600, 'docked', null).placements;
-    expect(after.find(p => p.id === 'b')!.effectiveWidth).toBe(MIN_WIDTH);
+    expect(after.find(p => p.id === 'a')!.effectiveWidth).toBe(MIN_WIDTH);
   });
 });
