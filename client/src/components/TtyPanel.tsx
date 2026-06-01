@@ -4,10 +4,9 @@ import { FitAddon } from 'xterm-addon-fit';
 import { WebLinksAddon } from 'xterm-addon-web-links';
 import 'xterm/css/xterm.css';
 import { cwdShort } from '../utils/path-display';
+import { MIN_WIDTH } from './tty-layout';
 
 const WS_URL = 'ws://localhost:5174';
-const DEFAULT_WIDTH = 420;
-const MIN_WIDTH = 240;
 
 const titleBarStyle: CSSProperties = {
   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -42,13 +41,16 @@ interface TtyPanelProps {
   title: string;
   cwd: string;
   rightOffset: number;
+  width: number;       // largeur contrôlée par le parent (état hissé pour empilement multi)
+  maxWidth: number;    // budget de largeur dispo à gauche du chat (clamp du drag)
   active: boolean;
+  onResizeWidth: (width: number) => void;
   onClose: () => void;
   onMinimize: () => void;
   onRename: (newTitle: string) => void;
 }
 
-export function TtyPanel({ ttyId, title, cwd, rightOffset, active, onClose, onMinimize, onRename }: TtyPanelProps) {
+export function TtyPanel({ ttyId, title, cwd, rightOffset, width, maxWidth, active, onResizeWidth, onClose, onMinimize, onRename }: TtyPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
@@ -95,24 +97,30 @@ export function TtyPanel({ ttyId, title, cwd, rightOffset, active, onClose, onMi
   }, [commitRename, title]);
 
   // ── Width resize (left-edge drag) ────────────────────────────────────────────
-  const [panelWidth, setPanelWidth] = useState(DEFAULT_WIDTH);
+  // La largeur est contrôlée par le parent ; le drag la remonte via onResizeWidth.
+  // maxWidth et onResizeWidth changent à chaque rendu : on les lit via des refs pour
+  // garder un seul jeu de listeners globaux (deps []) sans les figer.
   const isResizing = useRef(false);
   const resizeStartX = useRef(0);
-  const resizeStartWidth = useRef(DEFAULT_WIDTH);
+  const resizeStartWidth = useRef(width);
+  const maxWidthRef = useRef(maxWidth);
+  maxWidthRef.current = maxWidth;
+  const onResizeWidthRef = useRef(onResizeWidth);
+  onResizeWidthRef.current = onResizeWidth;
 
   const onResizeMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     isResizing.current = true;
     resizeStartX.current = e.clientX;
-    resizeStartWidth.current = panelWidth;
-  }, [panelWidth]);
+    resizeStartWidth.current = width;
+  }, [width]);
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
       if (!isResizing.current) return;
       const delta = resizeStartX.current - e.clientX; // drag left → wider
-      const maxW = Math.floor(window.innerWidth * 0.92);
-      setPanelWidth(Math.max(MIN_WIDTH, Math.min(maxW, resizeStartWidth.current + delta)));
+      const next = Math.max(MIN_WIDTH, Math.min(maxWidthRef.current, resizeStartWidth.current + delta));
+      onResizeWidthRef.current(next);
     };
     const onUp = () => { isResizing.current = false; };
     document.addEventListener('mousemove', onMove);
@@ -226,7 +234,7 @@ export function TtyPanel({ ttyId, title, cwd, rightOffset, active, onClose, onMi
   return (
     <div style={{
       position: 'absolute', bottom: 16, right: rightOffset, zIndex: active ? 26 : 25,
-      width: panelWidth, height: 'min(52vh, 520px)',
+      width, height: 'min(52vh, 520px)',
       display: 'flex', flexDirection: 'column', fontFamily: 'monospace',
       background: '#0d0d0d', color: '#f0f0f0',
       border: '4px solid #333', boxShadow: '8px 8px 0 rgba(0,0,0,0.35)',
