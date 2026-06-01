@@ -5,7 +5,7 @@ import { WebLinksAddon } from 'xterm-addon-web-links';
 import 'xterm/css/xterm.css';
 import { cwdShort } from '../utils/path-display';
 import { MIN_WIDTH } from './dock-layout';
-import { PanelColorPicker } from './PanelColorPicker';
+import { PanelColorPicker, PaletteRow } from './PanelColorPicker';
 import { readableTextColor } from '../utils/readable-text-color';
 
 const WS_URL = 'ws://localhost:5174';
@@ -313,6 +313,10 @@ export function TtyPanel({ ttyId, title, cwd, rightOffset, width, maxWidth, acti
             onMouseDown={e => e.preventDefault()}
             onClick={startRename}
           >Renommer</div>
+          <div style={{ ...menuItem, opacity: 0.55, fontSize: 11, cursor: 'default', paddingBottom: 2 }}>Couleur</div>
+          <div style={{ padding: '0 14px 10px' }} onMouseDown={e => e.preventDefault()}>
+            <PaletteRow color={color} onPick={c => { onColorChange(c); setMenu(null); }} />
+          </div>
         </div>
       )}
     </div>
