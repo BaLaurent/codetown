@@ -41,6 +41,8 @@ const baseProps = {
   isMaximized: false,
   onResizeWidth: vi.fn(),
   onToggleMaximize: vi.fn(),
+  color: null,
+  onColorChange: () => {},
 };
 
 function msg(partial: Partial<ChatMessage> & Pick<ChatMessage, 'role' | 'content'>): ChatMessage {

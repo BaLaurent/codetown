@@ -19,6 +19,8 @@ import { PERMISSION_MODE_OPTIONS } from './permission-modes';
 import { buildModelOptions } from './model-options';
 import { EFFORT_OPTIONS, EFFORT_TOOLTIP } from './effort-options-ui';
 import { MIN_WIDTH } from './dock-layout';
+import { PanelColorPicker } from './PanelColorPicker';
+import { readableTextColor } from '../utils/readable-text-color';
 
 const C = { ink: '#3A2E12', border: '#4A3B1A', gold: '#FFE040', cream: '#FFF8E6' };
 
@@ -29,7 +31,7 @@ const titleBar: CSSProperties = {
 
 const iconBtn: CSSProperties = {
   cursor: 'pointer', fontWeight: 700, background: 'transparent', border: 'none',
-  color: C.ink, fontFamily: 'monospace', fontSize: 14, padding: '0 4px',
+  color: 'inherit', fontFamily: 'monospace', fontSize: 14, padding: '0 4px',
 };
 
 const subBar: CSSProperties = {
@@ -216,7 +218,7 @@ function ThinkingBubble({ content }: { content: string }) {
   );
 }
 
-export function AgentChatPanel({ agentName, messages, dead, isThinking, commands, files, models, model, mode, effort, onModelChange, onModeChange, onEffortChange, onSend, onStop, onClose, onAttach, rightOffset, width, maxWidth, active, isMaximized, onResizeWidth, onToggleMaximize }: {
+export function AgentChatPanel({ agentName, messages, dead, isThinking, commands, files, models, model, mode, effort, onModelChange, onModeChange, onEffortChange, onSend, onStop, onClose, onAttach, rightOffset, width, maxWidth, active, isMaximized, onResizeWidth, onToggleMaximize, color, onColorChange }: {
   agentName: string;
   messages: ChatMessage[];
   dead?: boolean;  // session ended/crashed → input is disabled
@@ -244,6 +246,9 @@ export function AgentChatPanel({ agentName, messages, dead, isThinking, commands
   isMaximized: boolean;
   onResizeWidth: (width: number) => void;
   onToggleMaximize: () => void;
+  // Couleur personnalisée du panel (null = thème or par défaut)
+  color: string | null;
+  onColorChange: (color: string | null) => void;
 }) {
   const [draft, setDraft] = useState('');
   const [attachStatusText, setAttachStatusText] = useState<string | null>(null);
@@ -290,7 +295,7 @@ export function AgentChatPanel({ agentName, messages, dead, isThinking, commands
     width, height: 'min(52vh, 520px)',
     display: 'flex', flexDirection: 'column', fontFamily: 'monospace',
     background: C.cream, color: C.ink,
-    border: `4px solid ${C.border}`, boxShadow: '8px 8px 0 rgba(0,0,0,0.35)',
+    border: `4px solid ${color ?? C.border}`, boxShadow: '8px 8px 0 rgba(0,0,0,0.35)',
     visibility: active ? 'visible' : 'hidden',
     pointerEvents: active ? 'auto' : 'none',
   };
@@ -415,12 +420,14 @@ export function AgentChatPanel({ agentName, messages, dead, isThinking, commands
         onMouseDown={onResizeMouseDown}
         style={{
           position: 'absolute', left: -4, top: 0, bottom: 0, width: 8,
-          cursor: 'ew-resize', zIndex: 1,
+          cursor: 'ew-resize', zIndex: 2,
+          background: color ?? 'transparent',
         }}
       />
-      <div style={titleBar}>
+      <div style={color ? { ...titleBar, background: color, color: readableTextColor(color) } : titleBar}>
         <span>💬 {agentName}</span>
-        <span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+          <PanelColorPicker color={color} onChange={onColorChange} />
           <button style={iconBtn} onClick={onToggleMaximize} title={isMaximized ? 'Restaurer' : 'Maximiser'}>{isMaximized ? '🗗' : '🗖'}</button>
           <button style={iconBtn} onClick={onStop} title="Arrêter l'agent">⏹</button>
           <button style={iconBtn} onClick={onClose} title="Fermer">✕</button>

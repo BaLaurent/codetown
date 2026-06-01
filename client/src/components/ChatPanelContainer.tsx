@@ -10,6 +10,7 @@ import { AgentChatPanel } from './AgentChatPanel';
 import { useAgentStream } from '../hooks/AgentStream';
 import { mergeTranscript } from '../utils/chat-transcript';
 import { getAgentName, AGENT_NAMES_CHANGED } from '../utils/agent-names';
+import { getPanelColor, setPanelColor, clearPanelColor } from '../utils/panel-colors';
 import type { AgentCapabilities, ChatMessage, GraphData, ModelOption, SlashCommand } from '../types';
 import { DEFAULT_WIDTH, type DockPlacement } from './dock-layout';
 
@@ -199,6 +200,11 @@ export function ChatPanelContainer({ agentId, placement, active, isMaximized, on
       isMaximized={isMaximized}
       onResizeWidth={onResizeWidth}
       onToggleMaximize={onToggleMaximize}
+      color={getPanelColor(`chat:${agentId}`)}
+      onColorChange={c => {
+        if (c === null) clearPanelColor(`chat:${agentId}`); else setPanelColor(`chat:${agentId}`, c);
+        setChatTick(t => t + 1);
+      }}
     />
   );
 }
