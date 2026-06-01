@@ -1,21 +1,19 @@
 // Owns the agent chat UI ABOVE the building view, so the panel and its transcript
 // survive town<->building navigation (the panel used to live in HabboRoom, which
-// unmounts). State lives here; the WS stream (chat lines accumulate even while the
-// panel is closed) comes from useAgentStream. openChat/closeChat are exposed via
-// useChat() so the canvas (sprite click, spawn) and the roster can drive it.
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { AgentChatPanel } from './AgentChatPanel';
-import { useAgentStream } from '../hooks/AgentStream';
-import { mergeTranscript } from '../utils/chat-transcript';
-import { getAgentName, AGENT_NAMES_CHANGED } from '../utils/agent-names';
-import type { AgentCapabilities, ChatMessage, GraphData, ModelOption, SlashCommand } from '../types';
-
-const API_URL = 'http://localhost:5174/api';
+// unmounts). openChat/closeChat are exposed via useChat() so the canvas (sprite
+// click, spawn) and the roster can drive it.
+//
+// Multiple chats coexist as dock panels (chat:<agentId>). ChatProvider is a thin
+// mapper that delegates open/close to DockHost and renders one ChatPanelContainer
+// per open chat. Per-chat effects and state live in ChatPanelContainer.
+import { createContext, useCallback, useContext, useMemo, type ReactNode } from 'react';
+import { ChatPanelContainer } from './ChatPanelContainer';
+import { useDock } from './DockHost';
 
 interface ChatControl {
-  chatAgentId: string | null;
+  openChatIds: string[];
   openChat: (agentId: string) => void;
-  closeChat: () => void;
+  closeChat: (agentId: string) => void;
 }
 
 const ChatContext = createContext<ChatControl | null>(null);
@@ -27,178 +25,42 @@ export function useChat(): ChatControl {
 }
 
 export function ChatProvider({ children }: { children: ReactNode }) {
-  const { chatHistoryRef, chatVersionRef, thinkingAgentsRef, thinkingVersionRef } = useAgentStream();
+  const dock = useDock();
+  const { openPanel, closePanel, openKeysByKind } = dock;
 
-  const [chatAgentId, setChatAgentId] = useState<string | null>(null);
-  // "/" commands+skills and "@" files for the live session, plus the models it can
-  // switch to (same data the panel needs as when it lived in HabboRoom).
-  const [chatCommands, setChatCommands] = useState<SlashCommand[]>([]);
-  const [chatFiles, setChatFiles] = useState<string[]>([]);
-  const [chatModels, setChatModels] = useState<ModelOption[]>([]);
-  // Bumped when chatVersionRef advances (new line / permission) so the panel
-  // re-renders from the ref. Only ticked while a chat is open.
-  const [chatTick, setChatTick] = useState(0);
+  const openChatIds = useMemo(() => openKeysByKind('chat'), [openKeysByKind]);
 
-  const openChat = useCallback((agentId: string) => setChatAgentId(agentId), []);
-  const closeChat = useCallback(() => setChatAgentId(null), []);
+  const openChat = useCallback((agentId: string) => openPanel('chat', agentId), [openPanel]);
+  const closeChat = useCallback((agentId: string) => closePanel('chat', agentId), [closePanel]);
 
-  // On open: seed the transcript from the server (covers F5 / cold start where the
-  // local ref missed earlier lines), then load completion data. Merge keeps any
-  // live lines that arrived after the server's last timestamp (avoids the race
-  // where a WS line lands between request and response and gets clobbered).
-  useEffect(() => {
-    if (!chatAgentId) { setChatCommands([]); setChatFiles([]); setChatModels([]); return; }
-    const id = chatAgentId;
-    let cancelled = false;
-
-    fetch(`${API_URL}/agent/${id}/transcript`)
-      .then(r => (r.ok ? r.json() : []))
-      .then((server: ChatMessage[]) => {
-        if (cancelled || !Array.isArray(server) || server.length === 0) return;
-        chatHistoryRef.current.set(id, mergeTranscript(server, chatHistoryRef.current.get(id) ?? []));
-        chatVersionRef.current++;
-      })
-      .catch(() => { /* no transcript yet → rely on the live stream */ });
-
-    fetch(`${API_URL}/agent/${id}/capabilities`)
-      .then(r => (r.ok ? r.json() : null))
-      .then((caps: AgentCapabilities | null) => {
-        if (cancelled || !caps) return;
-        setChatCommands(caps.commands);
-        setChatModels(caps.models);
-      })
-      .catch(() => { /* no live session yet → no command completion */ });
-
-    // File "@" completion for the agent's OWN project (may differ from the viewed
-    // building), fetched fresh from the scoped graph.
-    const agentProject = thinkingAgentsRef.current.find(a => a.agentId === id)?.projectId;
-    const q = agentProject ? `?projectId=${encodeURIComponent(agentProject)}` : '';
-    fetch(`${API_URL}/graph${q}`)
-      .then(r => r.json())
-      .then((g: GraphData) => {
-        if (cancelled) return;
-        const rootId = g.nodes.find(n => n.depth === -1)?.id ?? '';
-        const toRel = (nodeId: string) => (nodeId.startsWith(rootId) ? nodeId.slice(rootId.length).replace(/^[/\\]/, '') : nodeId);
-        setChatFiles(g.nodes.filter(n => !n.isFolder && n.depth >= 0).map(n => toRel(n.id)));
-      })
-      .catch(() => { /* graph unavailable → no file completion */ });
-
-    return () => { cancelled = true; };
-  }, [chatAgentId, chatHistoryRef, chatVersionRef, thinkingAgentsRef]);
-
-  // Refresh the panel title when the user renames the focused agent (the roster
-  // writes the custom name and dispatches this event).
-  useEffect(() => {
-    if (!chatAgentId) return;
-    const onRename = () => setChatTick(t => t + 1);
-    window.addEventListener(AGENT_NAMES_CHANGED, onRename);
-    return () => window.removeEventListener(AGENT_NAMES_CHANGED, onRename);
-  }, [chatAgentId]);
-
-  // Poll the version refs (refs don't re-render) only while a chat is open, so the
-  // panel refreshes on each new line without a permanent render loop. Two refs
-  // are watched:
-  //   - chatVersionRef: new chat line / permission-request → panel transcript
-  //   - thinkingVersionRef: agent isThinking flipped → "typing…" indicator
-  // Same pattern HabboRoom uses (see HabboRoom.tsx ~L579-586).
-  useEffect(() => {
-    if (!chatAgentId) return;
-    let raf = 0;
-    let lastChat = chatVersionRef.current;
-    let lastThinking = thinkingVersionRef.current;
-    const loop = () => {
-      if (chatVersionRef.current !== lastChat || thinkingVersionRef.current !== lastThinking) {
-        lastChat = chatVersionRef.current;
-        lastThinking = thinkingVersionRef.current;
-        setChatTick(t => t + 1);
-      }
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-  }, [chatAgentId, chatVersionRef, thinkingVersionRef]);
-
-  const sendChat = (agentId: string, content: string) => {
-    fetch(`${API_URL}/agent/${agentId}/message`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content }),
-    }).catch(console.error);
-  };
-  const stopChat = (agentId: string) => {
-    fetch(`${API_URL}/agent/${agentId}/stop`, { method: 'POST' }).catch(console.error);
-  };
-  const setModeForAgent = (agentId: string, mode: string) => {
-    fetch(`${API_URL}/agent/${agentId}/mode`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mode }),
-    }).catch(console.error);
-  };
-  const setModelForAgent = (agentId: string, model: string) => {
-    fetch(`${API_URL}/agent/${agentId}/model`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model }),
-    }).catch(console.error);
-  };
-  const setEffortForAgent = (agentId: string, effort: string) => {
-    fetch(`${API_URL}/agent/${agentId}/effort`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ effort }),
-    }).catch(console.error);
-  };
-  // Upload one or more files to the agent's attachment folder. Returns the
-  // absolute paths so the panel can mention them in the draft.
-  const attachFiles = async (agentId: string, files: File[]): Promise<string[]> => {
-    if (files.length === 0) return [];
-    const form = new FormData();
-    for (const f of files) form.append('files', f, f.name);
-    const r = await fetch(`${API_URL}/agent/${agentId}/attach`, { method: 'POST', body: form });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const body = (await r.json()) as { paths?: string[] };
-    return body.paths ?? [];
-  };
-
-  // Recomputed on each tick so the panel reflects newly-arrived lines.
-  const history = useMemo<ChatMessage[]>(
-    () => (chatAgentId ? chatHistoryRef.current.get(chatAgentId) ?? [] : []),
-    [chatAgentId, chatTick, chatHistoryRef],
+  const control = useMemo<ChatControl>(
+    () => ({ openChatIds, openChat, closeChat }),
+    [openChatIds, openChat, closeChat],
   );
-
-  const control = useMemo<ChatControl>(() => ({ chatAgentId, openChat, closeChat }), [chatAgentId, openChat, closeChat]);
 
   return (
     <ChatContext.Provider value={control}>
       {children}
-      {chatAgentId && (() => {
-        const agent = thinkingAgentsRef.current.find(a => a.agentId === chatAgentId);
-        // Authoritative when the agent is still tracked: the server reports whether
-        // its SDK session is live. Falls back to the transcript signal (a terminal
-        // 'system' line) for post-kill replay, where the agent has been dropped from
-        // state and only its transcript remains.
-        const dead = agent
-          ? agent.running === false
-          : history.length > 0 && history[history.length - 1].role === 'system';
+      {/* All open chats are mounted with stable key=agentId.
+          Evicted panels (placement === undefined → active=false) stay mounted
+          with visibility:hidden so their transcript/caps/graph are not re-fetched
+          on overflow flaps. */}
+      {openChatIds.map(agentId => {
+        const key = `chat:${agentId}`;
+        const placement = dock.placementFor(key);
         return (
-          <AgentChatPanel
-            agentName={getAgentName(chatAgentId, agent?.displayName || 'Agent')}
-            messages={history}
-            dead={dead}
-            isThinking={agent?.isThinking}
-            commands={chatCommands}
-            files={chatFiles}
-            models={chatModels}
-            model={agent?.model}
-            mode={agent?.permissionMode}
-            effort={agent?.effort}
-            onModelChange={model => setModelForAgent(chatAgentId, model)}
-            onModeChange={mode => setModeForAgent(chatAgentId, mode)}
-            onEffortChange={effort => setEffortForAgent(chatAgentId, effort)}
-            onSend={content => sendChat(chatAgentId, content)}
-            onStop={() => { stopChat(chatAgentId); closeChat(); }}
-            onClose={closeChat}
-            onAttach={files => attachFiles(chatAgentId, files)}
+          <ChatPanelContainer
+            key={agentId}
+            agentId={agentId}
+            placement={placement}
+            active={placement !== undefined}
+            isMaximized={dock.maximizedKey === key}
+            onClose={() => closeChat(agentId)}
+            onResizeWidth={w => dock.setWidth(key, w)}
+            onToggleMaximize={() => (dock.maximizedKey === key ? dock.restore() : dock.maximize(key))}
           />
         );
-      })()}
+      })}
     </ChatContext.Provider>
   );
 }

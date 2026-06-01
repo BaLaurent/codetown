@@ -33,6 +33,14 @@ const baseProps = {
   onStop: vi.fn(),
   onClose: vi.fn(),
   onAttach: noopAttach,
+  // Placement props (dock integration)
+  rightOffset: 16,
+  width: 420,
+  maxWidth: 420,
+  active: true,
+  isMaximized: false,
+  onResizeWidth: vi.fn(),
+  onToggleMaximize: vi.fn(),
 };
 
 function msg(partial: Partial<ChatMessage> & Pick<ChatMessage, 'role' | 'content'>): ChatMessage {

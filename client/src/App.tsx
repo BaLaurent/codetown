@@ -9,6 +9,7 @@ import { AgentRosterPanel, type AgentFocusRequest, type FocusRequest, type Actio
 import { AgentStreamProvider } from './hooks/AgentStream';
 import { ChatProvider, useChat } from './components/ChatHost';
 import { TtyProvider } from './components/TtyHost';
+import { DockProvider, useDock } from './components/DockHost';
 import { getMuted, setMuted } from './sounds';
 
 // Mute button component
@@ -92,11 +93,13 @@ function HotelView() {
 
   return (
     <AgentStreamProvider projectId={selectedProject ?? undefined}>
-      <ChatProvider>
-        <TtyProvider>
-          <HotelViewInner selectedProject={selectedProject} onSelectProject={setSelectedProject} />
-        </TtyProvider>
-      </ChatProvider>
+      <DockProvider>
+        <ChatProvider>
+          <TtyProvider>
+            <HotelViewInner selectedProject={selectedProject} onSelectProject={setSelectedProject} />
+          </TtyProvider>
+        </ChatProvider>
+      </DockProvider>
     </AgentStreamProvider>
   );
 }
@@ -108,6 +111,7 @@ function HotelViewInner({ selectedProject, onSelectProject }: {
   const [focusRequest, setFocusRequest] = useState<FocusRequest | null>(null);
   const [actionRequest, setActionRequest] = useState<ActionRequest | null>(null);
   const { openChat } = useChat();
+  const { mode, toggleMode, dockHeight } = useDock();
 
   // Clicking an agent in the roster: enter its building (if known) and stamp a
   // fresh focus request so HabboRoom flies the camera to it.
@@ -123,7 +127,14 @@ function HotelViewInner({ selectedProject, onSelectProject }: {
 
   return (
     <>
-      <TownView selected={selectedProject} onSelect={onSelectProject} focusRequest={focusRequest} actionRequest={actionRequest} />
+      <div style={{
+        width: '100vw',
+        height: mode === 'docked' ? `calc(100vh - ${dockHeight}px)` : '100vh',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        <TownView selected={selectedProject} onSelect={onSelectProject} focusRequest={focusRequest} actionRequest={actionRequest} />
+      </div>
       <AgentRosterPanel onSelectAgent={handleSelectAgent} onOpenChat={openChat} onRespond={handleRespond} />
       <div style={{
         position: 'absolute',
@@ -144,6 +155,11 @@ function HotelViewInner({ selectedProject, onSelectProject }: {
             ← Town
           </button>
         )}
+        <button
+          onClick={toggleMode}
+          style={{ ...navLinkStyle, cursor: 'pointer' }}
+          title={mode === 'docked' ? 'Repasser les panneaux en flottant' : 'Docker les panneaux en bas'}
+        >⬓ {mode === 'docked' ? 'Float' : 'Dock'}</button>
         <MuteButton />
       </div>
     </>

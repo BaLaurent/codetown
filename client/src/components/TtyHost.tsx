@@ -1,8 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useState, useMemo, type ReactNode } from 'react';
 import { TtyPanel } from './TtyPanel';
-import { useChat } from './ChatHost';
 import { getTtyTitle, setTtyTitle, clearTtyTitle } from '../utils/tty-titles';
-import { computeTtyLayout, DEFAULT_WIDTH } from './tty-layout';
+import { DEFAULT_WIDTH } from './dock-layout';
+import { useDock } from './DockHost';
 
 const API_URL = 'http://localhost:5174/api';
 
@@ -14,7 +14,7 @@ interface TtySessionClient {
 
 interface TtyControl {
   // Liste d'intention (ordre d'ouverture, le plus récent en dernier). Le sous-ensemble
-  // réellement affiché est dérivé du budget de largeur (voir computeTtyLayout).
+  // réellement affiché est dérivé du budget de largeur (via le dock).
   openTtyIds: string[];
   ttySessions: TtySessionClient[];
   spawnTty: (projectId?: string) => Promise<void>;
@@ -33,19 +33,15 @@ export function useTty(): TtyControl {
 }
 
 export function TtyProvider({ children }: { children: ReactNode }) {
-  const [openTtyIds, setOpenTtyIds] = useState<string[]>([]);
-  const [widths, setWidths] = useState<Record<string, number>>({});
   const [ttySessions, setTtySessions] = useState<TtySessionClient[]>([]);
-  const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
-  const { chatAgentId } = useChat();
+  const dock = useDock();
+  // Callbacks stables (useCallback dans DockHost) : on les destructure pour les utiliser
+  // comme deps fines, sinon `[dock]` change à chaque état du dock (drag, resize) et
+  // re-render inutilement HabboRoom + AgentRosterPanel via le contexte.
+  const { openPanel, closePanel, openKeysByKind } = dock;
 
-  // La visibilité dépend de la largeur de la fenêtre : on suit innerWidth pour
-  // évincer (rétrécissement) ou auto-restaurer (agrandissement) les panneaux.
-  useEffect(() => {
-    const onResize = () => setViewportWidth(window.innerWidth);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
+  // IDs des terminaux ouverts dans le dock — dérivé de l'ordre du dock.
+  const openTtyIds = useMemo(() => openKeysByKind('tty'), [openKeysByKind]);
 
   // Réhydrater les sessions survivantes au mount (ex: reload de page),
   // en appliquant les titres personnalisés stockés en localStorage.
@@ -67,33 +63,27 @@ export function TtyProvider({ children }: { children: ReactNode }) {
     if (!r.ok) return;
     const info: TtySessionClient = await r.json();
     setTtySessions(prev => [...prev, { ...info, title: getTtyTitle(info.ttyId, info.title) }]);
-    setOpenTtyIds(prev => [...prev, info.ttyId]);
-  }, []);
+    openPanel('tty', info.ttyId);
+  }, [openPanel]);
 
   // Idempotent : ajoute en fin (= le plus récent, prioritaire à l'affichage) si absent,
   // no-op si déjà présent. Surtout PAS un toggle — le retrait passe par hideTty.
   const openTty = useCallback((ttyId: string) => {
-    setOpenTtyIds(prev => prev.includes(ttyId) ? prev : [...prev, ttyId]);
-  }, []);
+    openPanel('tty', ttyId);
+  }, [openPanel]);
 
   // Masque le panel sans tuer la session — le buffer 64KB côté serveur
   // assure le replay de l'historique à la prochaine ouverture.
   const hideTty = useCallback((ttyId: string) => {
-    setOpenTtyIds(prev => prev.filter(id => id !== ttyId));
-  }, []);
+    closePanel('tty', ttyId);
+  }, [closePanel]);
 
   const closeTty = useCallback((ttyId: string) => {
     fetch(`${API_URL}/tty/${ttyId}`, { method: 'DELETE' }).catch(() => { /* ignore */ });
     clearTtyTitle(ttyId);
     setTtySessions(prev => prev.filter(s => s.ttyId !== ttyId));
-    setOpenTtyIds(prev => prev.filter(id => id !== ttyId));
-    setWidths(prev => {
-      if (!(ttyId in prev)) return prev;
-      const next = { ...prev };
-      delete next[ttyId];
-      return next;
-    });
-  }, []);
+    closePanel('tty', ttyId);
+  }, [closePanel]);
 
   const renameTty = useCallback((ttyId: string, newTitle: string) => {
     const trimmed = newTitle.trim();
@@ -102,20 +92,10 @@ export function TtyProvider({ children }: { children: ReactNode }) {
     setTtySessions(prev => prev.map(s => s.ttyId === ttyId ? { ...s, title: trimmed } : s));
   }, []);
 
-  const setTtyWidth = useCallback((ttyId: string, width: number) => {
-    setWidths(prev => ({ ...prev, [ttyId]: width }));
-  }, []);
-
   const control = useMemo<TtyControl>(
     () => ({ openTtyIds, ttySessions, spawnTty, openTty, hideTty, closeTty, renameTty }),
     [openTtyIds, ttySessions, spawnTty, openTty, hideTty, closeTty, renameTty],
   );
-
-  // Dérive les panneaux visibles + leurs positions. Le chat reste ancré à droite ;
-  // les terminaux s'empilent à sa gauche, le plus récent collé au chat.
-  const chatOpen = chatAgentId !== null;
-  const { placements, budget } = computeTtyLayout(openTtyIds, widths, viewportWidth, chatOpen);
-  const placementById = new Map(placements.map(p => [p.ttyId, p]));
 
   return (
     <TtyContext.Provider value={control}>
@@ -129,7 +109,8 @@ export function TtyProvider({ children }: { children: ReactNode }) {
           empêche xterm d'initialiser son renderer (mesure de glyphe à 0 sous Firefox)
           → crash sur .dimensions. */}
       {ttySessions.map(session => {
-        const placement = placementById.get(session.ttyId);
+        const key = `tty:${session.ttyId}`;
+        const placement = dock.placementFor(key);
         return (
           <TtyPanel
             key={session.ttyId}
@@ -137,12 +118,14 @@ export function TtyProvider({ children }: { children: ReactNode }) {
             title={session.title}
             cwd={session.cwd}
             rightOffset={placement?.rightOffset ?? 16}
-            width={placement?.effectiveWidth ?? widths[session.ttyId] ?? DEFAULT_WIDTH}
-            maxWidth={placement?.maxWidth ?? budget}
+            width={placement?.effectiveWidth ?? DEFAULT_WIDTH}
+            maxWidth={placement?.maxWidth ?? DEFAULT_WIDTH}
             active={placement !== undefined}
-            onResizeWidth={w => setTtyWidth(session.ttyId, w)}
+            isMaximized={dock.maximizedKey === key}
+            onResizeWidth={w => dock.setWidth(key, w)}
             onClose={() => closeTty(session.ttyId)}
             onMinimize={() => hideTty(session.ttyId)}
+            onToggleMaximize={() => (dock.maximizedKey === key ? dock.restore() : dock.maximize(key))}
             onRename={newTitle => renameTty(session.ttyId, newTitle)}
           />
         );
