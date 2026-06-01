@@ -11,23 +11,16 @@
 //   - thinking   → <ThinkingBubble> 💭 collapsed by default, markdown inside
 //   - tool_result → NOT rendered standalone (consumed by its tool above);
 //                  orphan results fall back to a discreet system line
-import { useState, useRef, useEffect, useMemo, type CSSProperties, type ClipboardEvent } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback, type CSSProperties, type ClipboardEvent } from 'react';
 import type { ChatMessage, SlashCommand, ModelOption } from '../types';
 import { MarkdownBody } from './MarkdownBody';
 import { CompletionInput } from './chat-completion';
 import { PERMISSION_MODE_OPTIONS } from './permission-modes';
 import { buildModelOptions } from './model-options';
 import { EFFORT_OPTIONS, EFFORT_TOOLTIP } from './effort-options-ui';
+import { MIN_WIDTH } from './dock-layout';
 
 const C = { ink: '#3A2E12', border: '#4A3B1A', gold: '#FFE040', cream: '#FFF8E6' };
-
-const panel: CSSProperties = {
-  position: 'absolute', right: 16, bottom: 16, zIndex: 25,
-  width: 'min(420px, 92vw)', height: 'min(52vh, 520px)',
-  display: 'flex', flexDirection: 'column', fontFamily: 'monospace',
-  background: C.cream, color: C.ink,
-  border: `4px solid ${C.border}`, boxShadow: '8px 8px 0 rgba(0,0,0,0.35)',
-};
 
 const titleBar: CSSProperties = {
   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -223,7 +216,7 @@ function ThinkingBubble({ content }: { content: string }) {
   );
 }
 
-export function AgentChatPanel({ agentName, messages, dead, isThinking, commands, files, models, model, mode, effort, onModelChange, onModeChange, onEffortChange, onSend, onStop, onClose, onAttach }: {
+export function AgentChatPanel({ agentName, messages, dead, isThinking, commands, files, models, model, mode, effort, onModelChange, onModeChange, onEffortChange, onSend, onStop, onClose, onAttach, rightOffset, width, maxWidth, active, isMaximized, onResizeWidth, onToggleMaximize }: {
   agentName: string;
   messages: ChatMessage[];
   dead?: boolean;  // session ended/crashed → input is disabled
@@ -243,11 +236,64 @@ export function AgentChatPanel({ agentName, messages, dead, isThinking, commands
   // Upload files to the agent's attachment folder. Returns the absolute paths
   // the server wrote them to (the panel mentions those in the draft).
   onAttach: (files: File[]) => Promise<string[]>;
+  // Placement props from the dock (position, size, visibility)
+  rightOffset: number;
+  width: number;
+  maxWidth: number;
+  active: boolean;
+  isMaximized: boolean;
+  onResizeWidth: (width: number) => void;
+  onToggleMaximize: () => void;
 }) {
   const [draft, setDraft] = useState('');
   const [attachStatusText, setAttachStatusText] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Width resize (left-edge drag) ────────────────────────────────────────────
+  // Mirrors TtyPanel exactly: refs for maxWidth/onResizeWidth to keep one global
+  // listener pair (deps []) without freezing the callbacks.
+  const isResizing = useRef(false);
+  const resizeStartX = useRef(0);
+  const resizeStartWidth = useRef(width);
+  const maxWidthRef = useRef(maxWidth);
+  maxWidthRef.current = maxWidth;
+  const onResizeWidthRef = useRef(onResizeWidth);
+  onResizeWidthRef.current = onResizeWidth;
+
+  const onResizeMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isResizing.current = true;
+    resizeStartX.current = e.clientX;
+    resizeStartWidth.current = width;
+  }, [width]);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!isResizing.current) return;
+      const delta = resizeStartX.current - e.clientX; // drag left → wider
+      const next = Math.max(MIN_WIDTH, Math.min(maxWidthRef.current, resizeStartWidth.current + delta));
+      onResizeWidthRef.current(next);
+    };
+    const onUp = () => { isResizing.current = false; };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    return () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+  }, []);
+
+  // Dynamic panel style — position/size/visibility come from dock placement props.
+  const panelStyle: CSSProperties = {
+    position: 'absolute', bottom: 16, right: rightOffset, zIndex: active ? 26 : 25,
+    width, height: 'min(52vh, 520px)',
+    display: 'flex', flexDirection: 'column', fontFamily: 'monospace',
+    background: C.cream, color: C.ink,
+    border: `4px solid ${C.border}`, boxShadow: '8px 8px 0 rgba(0,0,0,0.35)',
+    visibility: active ? 'visible' : 'hidden',
+    pointerEvents: active ? 'auto' : 'none',
+  };
 
   // Local mirrors so a pick reflects immediately, then resyncs if the
   // server-confirmed value (prop) changes.
@@ -359,14 +405,23 @@ export function AgentChatPanel({ agentName, messages, dead, isThinking, commands
   };
 
   return (
-    <div style={panel} onPaste={onPaste}>
+    <div style={panelStyle} onPaste={onPaste}>
       {/* Keyframes for the "typing…" dots. Inline because the project has no
-          CSS file. Only one AgentChatPanel mounts at a time, so the rule lives
-          and dies with the panel. */}
+          CSS file. Multiple AgentChatPanels may be mounted simultaneously;
+          identical keyframe rules are harmless (browsers deduplicate them). */}
       <style>{`@keyframes hf-typing-pulse { 0%, 80%, 100% { opacity: 0.25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-2px); } }`}</style>
+      {/* Resize handle — left edge drag, mirrors TtyPanel */}
+      <div
+        onMouseDown={onResizeMouseDown}
+        style={{
+          position: 'absolute', left: -4, top: 0, bottom: 0, width: 8,
+          cursor: 'ew-resize', zIndex: 1,
+        }}
+      />
       <div style={titleBar}>
         <span>💬 {agentName}</span>
         <span>
+          <button style={iconBtn} onClick={onToggleMaximize} title={isMaximized ? 'Restaurer' : 'Maximiser'}>{isMaximized ? '🗗' : '🗖'}</button>
           <button style={iconBtn} onClick={onStop} title="Arrêter l'agent">⏹</button>
           <button style={iconBtn} onClick={onClose} title="Fermer">✕</button>
         </span>

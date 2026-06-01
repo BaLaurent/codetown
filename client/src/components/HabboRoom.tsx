@@ -81,7 +81,7 @@ export function HabboRoom({ projectId, focusRequest, actionRequest }: { projectI
   // Chat state/UI now lives in ChatProvider (above this view, so it survives
   // town<->building navigation). HabboRoom only opens chats and reads which agent
   // is focused to auto-open its permission modal.
-  const { chatAgentId, openChat } = useChat();
+  const { openChatIds, openChat } = useChat();
 
   const nav = useFloorNavigation();
 
@@ -148,17 +148,22 @@ export function HabboRoom({ projectId, focusRequest, actionRequest }: { projectI
     if (actionRequest.action === 'respond') openInteractionFor(actionRequest.agentId);
   }, [actionRequest, openInteractionFor]);
 
-  // Auto-open the permission modal for the focused chat agent when it asks (tool
-  // prompts fire often, so click-to-respond would be painful). chatTick advances
-  // on each permission-request; the shown-set guard keeps ✕ as an escape hatch.
+  // Auto-open the permission modal for ANY open chat agent that asks (tool prompts
+  // fire often, so click-to-respond would be painful). Scans all open chats — not
+  // just the most recent — so a non-focused open chat's request still surfaces.
+  // chatTick advances on each permission-request; the shown-set guard keeps ✕ as
+  // an escape hatch. One modal at a time: the next request rises on the next tick.
   useEffect(() => {
-    if (!chatAgentId || modalTarget) return;
-    const pending = pendingRequestsRef.current.get(chatAgentId);
-    if (pending?.kind === 'permission' && !shownPermReqRef.current.has(pending.requestId)) {
-      shownPermReqRef.current.add(pending.requestId);
-      openInteractionFor(chatAgentId);
+    if (modalTarget) return;
+    for (const agentId of openChatIds) {
+      const pending = pendingRequestsRef.current.get(agentId);
+      if (pending?.kind === 'permission' && !shownPermReqRef.current.has(pending.requestId)) {
+        shownPermReqRef.current.add(pending.requestId);
+        openInteractionFor(agentId);
+        break;
+      }
     }
-  }, [chatAgentId, chatTick, modalTarget, openInteractionFor, pendingRequestsRef]);
+  }, [openChatIds, chatTick, modalTarget, openInteractionFor, pendingRequestsRef]);
 
   // Load the project's cached model/subagent options when the spawn form opens.
   useEffect(() => {
