@@ -122,14 +122,13 @@ const actionBtn: CSSProperties = {
   cursor: 'pointer', flexShrink: 0,
 };
 
-export function AgentRosterPanel({ onSelectAgent, onOpenChat, onRespond, onOpenTty }: {
+export function AgentRosterPanel({ onSelectAgent, onOpenChat, onRespond }: {
   onSelectAgent: (req: AgentFocusRequest) => void;
   onOpenChat?: (agentId: string) => void;
   onRespond?: (agentId: string) => void;
-  onOpenTty?: (ttyId: string) => void;
 }) {
   const { groups, clearAgents, stopAgent } = useAgentRoster();
-  const { ttySessions, spawnTty, closeTty, openTtyId, openTty, hideTty, renameTty } = useTty();
+  const { ttySessions, spawnTty, closeTty, openTtyIds, openTty, hideTty, renameTty } = useTty();
   const [collapsed, setCollapsed] = useState(() => loadBool(COLLAPSED_KEY));
   const [ttyCollapsed, setTtyCollapsed] = useState(() => loadBool(TTY_COLLAPSED_KEY));
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => loadSet(GROUPS_KEY));
@@ -338,10 +337,10 @@ export function AgentRosterPanel({ onSelectAgent, onOpenChat, onRespond, onOpenT
                     )}
                   </div>
                   <div style={{ display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
-                    {openTtyId === tty.ttyId ? (
-                      <button style={actionBtn} title="Réduire le terminal" onClick={() => hideTty()}>─</button>
+                    {openTtyIds.includes(tty.ttyId) ? (
+                      <button style={actionBtn} title="Réduire le terminal" onClick={() => hideTty(tty.ttyId)}>─</button>
                     ) : (
-                      <button style={actionBtn} title="Ouvrir le terminal" onClick={() => { openTty(tty.ttyId); onOpenTty?.(tty.ttyId); }}>💻</button>
+                      <button style={actionBtn} title="Ouvrir le terminal" onClick={() => openTty(tty.ttyId)}>💻</button>
                     )}
                     <button style={{ ...actionBtn, color: '#f87171' }} title="Fermer le terminal" onClick={() => closeTty(tty.ttyId)}>✕</button>
                   </div>
