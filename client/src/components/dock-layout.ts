@@ -37,6 +37,30 @@ function clamp(v: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, v));
 }
 
+// Resize docké : le panneau `key` grandit jusqu'à desired, en prenant UNIQUEMENT
+// ce que son voisin de droite peut céder jusqu'à MIN_WIDTH. Pure → testable.
+export function redistributeWidth(
+  visibleKeysLeftToRight: string[],
+  widths: Record<string, number>,
+  key: string,
+  desiredWidth: number,
+): Record<string, number> {
+  const i = visibleKeysLeftToRight.indexOf(key);
+  if (i < 0 || i === visibleKeysLeftToRight.length - 1) return widths; // pas de voisin droite
+  const rightKey = visibleKeysLeftToRight[i + 1];
+  const cur = widths[key] ?? 0;
+  const rightCur = widths[rightKey] ?? 0;
+  const grow = Math.max(0, Math.min(desiredWidth - cur, rightCur - MIN_WIDTH));
+  return { ...widths, [key]: cur + grow, [rightKey]: rightCur - grow };
+}
+
+// Hauteur réservée en bas pour le dock (synchro avec le CSS du panneau).
+export function computeDockHeight(mode: LayoutMode, openCount: number, viewportHeight: number): number {
+  if (mode !== 'docked' || openCount === 0) return 0;
+  const panelPx = Math.min(Math.round(PANEL_HEIGHT_VH * viewportHeight), PANEL_HEIGHT_MAX);
+  return panelPx + 32; // 16 (marge bas) + 16 (espace au-dessus)
+}
+
 // panels : ordre d'ouverture, le plus récent EN DERNIER (prioritaire à l'affichage).
 export function computeDockLayout(
   panels: DockPanel[],

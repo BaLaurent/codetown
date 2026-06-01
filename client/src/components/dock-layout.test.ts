@@ -1,7 +1,7 @@
 // client/src/components/dock-layout.test.ts
 import { describe, it, expect } from 'vitest';
 import {
-  computeDockLayout, panelKey,
+  computeDockLayout, panelKey, redistributeWidth, computeDockHeight,
   DEFAULT_WIDTH, GAP, MARGIN,
   type DockPanel,
 } from './dock-layout';
@@ -121,5 +121,45 @@ describe('computeDockLayout — maximize', () => {
       [tty('a'), tty('b')], {}, WIDE, 'floating', 'tty:zzz',
     );
     expect(placements).toHaveLength(2);
+  });
+});
+
+describe('redistributeWidth (resize split-pane, docké)', () => {
+  const visible = ['tty:a', 'tty:b']; // gauche→droite
+
+  it('agrandir A vole la place à son voisin de droite B', () => {
+    const next = redistributeWidth(visible, { 'tty:a': 400, 'tty:b': 400 }, 'tty:a', 500);
+    expect(next['tty:a']).toBe(500);
+    expect(next['tty:b']).toBe(300);
+  });
+
+  it('ne fait pas passer le voisin sous MIN_WIDTH', () => {
+    const next = redistributeWidth(visible, { 'tty:a': 400, 'tty:b': 300 }, 'tty:a', 900);
+    expect(next['tty:b']).toBe(240);          // MIN_WIDTH
+    expect(next['tty:a']).toBe(400 + (300 - 240)); // n'a pris que ce que B pouvait céder
+  });
+
+  it('le panneau le plus à droite ne peut pas grandir (pas de voisin droite)', () => {
+    const next = redistributeWidth(visible, { 'tty:a': 400, 'tty:b': 400 }, 'tty:b', 600);
+    expect(next['tty:b']).toBe(400);
+    expect(next['tty:a']).toBe(400);
+  });
+
+  it('clé absente → renvoie le même objet (bail-out)', () => {
+    const w = { 'tty:a': 400 };
+    expect(redistributeWidth(['tty:a'], w, 'tty:zzz', 600)).toBe(w);
+  });
+});
+
+describe('computeDockHeight', () => {
+  it('0 en flottant', () => {
+    expect(computeDockHeight('floating', 2, 1000)).toBe(0);
+  });
+  it('0 si aucun panneau ouvert', () => {
+    expect(computeDockHeight('docked', 0, 1000)).toBe(0);
+  });
+  it('hauteur panneau + marges en docké avec des panneaux (plafond 520)', () => {
+    expect(computeDockHeight('docked', 1, 2000)).toBe(520 + 32); // 0.52*2000=1040 → plafonné 520
+    expect(computeDockHeight('docked', 1, 800)).toBe(Math.round(0.52 * 800) + 32);
   });
 });
