@@ -135,7 +135,8 @@ function layoutFloating(panels: DockPanel[], widths: Record<string, number>, bud
 
 // Docké : le sous-ensemble visible (au plus N tenant à MIN_WIDTH) se RÉPARTIT sur
 // toute la barre, proportionnellement aux largeurs stockées. maxWidth (split-pane)
-// = largeur actuelle + ce que le voisin de droite peut céder jusqu'à MIN_WIDTH.
+// = largeur actuelle + ce que le voisin de GAUCHE peut céder jusqu'à MIN_WIDTH
+// (la poignée est sur le bord gauche du panneau).
 function layoutDocked(panels: DockPanel[], widths: Record<string, number>, budget: number): DockLayout {
   // 1) Sous-ensemble visible : du plus récent au plus ancien tant qu'ils tiennent à MIN_WIDTH.
   const visible: DockPanel[] = [];
