@@ -56,3 +56,42 @@ describe('computeDockLayout — politique flottant (parité TTY)', () => {
     expect(panelKey(panels[1])).toBe('chat:agent1');
   });
 });
+
+describe('computeDockLayout — politique docké (étirée)', () => {
+  it('un seul panneau remplit toute la barre (pas de zone vide)', () => {
+    const { placements, budget } = computeDockLayout([tty('a')], {}, WIDE, 'docked', null);
+    expect(placements[0].effectiveWidth).toBe(budget);
+    expect(placements[0].rightOffset).toBe(MARGIN);
+  });
+
+  it('deux panneaux par défaut se partagent la barre à parts égales', () => {
+    const { placements, budget } = computeDockLayout([tty('a'), tty('b')], {}, WIDE, 'docked', null);
+    const each = (budget - GAP) / 2;
+    expect(placements.map(p => p.effectiveWidth)).toEqual([each, each]);
+    expect(placements[0].effectiveWidth + GAP + placements[1].effectiveWidth).toBe(budget);
+  });
+
+  it('largeurs custom : réparties proportionnellement, somme == budget', () => {
+    const { placements, budget } = computeDockLayout(
+      [tty('a'), tty('b')], { 'tty:a': 300, 'tty:b': 900 }, WIDE, 'docked', null,
+    );
+    const total = placements.reduce((s, p) => s + p.effectiveWidth, 0) + GAP * (placements.length - 1);
+    expect(total).toBe(budget);
+    expect(placements.find(p => p.id === 'b')!.effectiveWidth)
+      .toBeGreaterThan(placements.find(p => p.id === 'a')!.effectiveWidth);
+  });
+
+  it('évince le plus ancien quand même MIN_WIDTH chacun ne tient plus', () => {
+    const wide4 = computeDockLayout(
+      [tty('a'), tty('b'), tty('c'), tty('d')], {}, 800, 'docked', null,
+    );
+    expect(wide4.placements).toHaveLength(3);
+    expect(wide4.placements.map(p => p.id)).toEqual(['b', 'c', 'd']);
+  });
+
+  it('maxWidth : le panneau gauche peut absorber la marge du voisin droit ; le plus à droite est figé', () => {
+    const { placements } = computeDockLayout([tty('a'), tty('b')], {}, WIDE, 'docked', null);
+    expect(placements[0].maxWidth).toBeGreaterThan(placements[0].effectiveWidth);
+    expect(placements[1].maxWidth).toBe(placements[1].effectiveWidth); // rightmost: figé (pas de voisin droite)
+  });
+});
