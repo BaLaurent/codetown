@@ -1332,10 +1332,13 @@ export function HabboRoom({ projectId, focusRequest, actionRequest }: { projectI
     };
 
     const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      const parent = canvas.parentElement;
+      canvas.width = parent ? parent.clientWidth : window.innerWidth;
+      canvas.height = parent ? parent.clientHeight : window.innerHeight;
     };
     resize();
+    const ro = new ResizeObserver(resize);
+    if (canvas.parentElement) ro.observe(canvas.parentElement);
     window.addEventListener('resize', resize);
 
     // Zoom with mouse wheel (zooms toward mouse position)
@@ -1531,6 +1534,7 @@ export function HabboRoom({ projectId, focusRequest, actionRequest }: { projectI
     return () => {
       running = false;
       clearInterval(hotFoldersInterval);
+      ro.disconnect();
       window.removeEventListener('resize', resize);
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
@@ -1572,7 +1576,7 @@ export function HabboRoom({ projectId, focusRequest, actionRequest }: { projectI
   };
 
   return (
-    <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', backgroundColor: '#C8E8F8' }}>
+    <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', backgroundColor: '#C8E8F8' }}>
       <div style={{
         position: 'absolute', top: 16, left: 16, zIndex: 10,
         color: '#4A5A6A', fontSize: '16px', fontWeight: 'bold',

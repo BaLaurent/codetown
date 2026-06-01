@@ -47,8 +47,14 @@ export function TownView({ selected, onSelect, focusRequest, actionRequest }: {
     if (!ctx) return;
     let raf = 0;
     let frame = 0;
-    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+    const resize = () => {
+      const parent = canvas.parentElement;
+      canvas.width = parent ? parent.clientWidth : window.innerWidth;
+      canvas.height = parent ? parent.clientHeight : window.innerHeight;
+    };
     resize();
+    const ro = new ResizeObserver(resize);
+    if (canvas.parentElement) ro.observe(canvas.parentElement);
     window.addEventListener('resize', resize);
 
     const render = () => {
@@ -138,6 +144,7 @@ export function TownView({ selected, onSelect, focusRequest, actionRequest }: {
 
     return () => {
       cancelAnimationFrame(raf);
+      ro.disconnect();
       window.removeEventListener('resize', resize);
       canvas.removeEventListener('mousemove', onMove);
       canvas.removeEventListener('click', onClick);
@@ -161,7 +168,7 @@ export function TownView({ selected, onSelect, focusRequest, actionRequest }: {
 
   return (
     <>
-      <canvas ref={canvasRef} style={{ display: 'block' }} />
+      <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} />
       {browsing && (
         <div style={overlay} onClick={e => { if (e.target === e.currentTarget) setBrowsing(false); }}>
           <FolderBrowser onClose={() => setBrowsing(false)} />
