@@ -1,9 +1,31 @@
 // client/src/components/PanelColorPicker.test.tsx
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
-import { PanelColorPicker, PANEL_PALETTE } from './PanelColorPicker';
+import { PanelColorPicker, PaletteRow, PANEL_PALETTE } from './PanelColorPicker';
 
 afterEach(cleanup);
+
+describe('PaletteRow', () => {
+  it('renders one swatch per palette color plus a reset', () => {
+    render(<PaletteRow color={null} onPick={() => {}} />);
+    expect(screen.getAllByRole('button', { name: /couleur/i }).length)
+      .toBe(PANEL_PALETTE.length + 1); // pastilles + "défaut"
+  });
+
+  it('calls onPick with the chosen color', () => {
+    const onPick = vi.fn();
+    render(<PaletteRow color={null} onPick={onPick} />);
+    fireEvent.click(screen.getByTitle(PANEL_PALETTE[1]));
+    expect(onPick).toHaveBeenCalledWith(PANEL_PALETTE[1]);
+  });
+
+  it('calls onPick(null) on the reset swatch', () => {
+    const onPick = vi.fn();
+    render(<PaletteRow color={'#C83030'} onPick={onPick} />);
+    fireEvent.click(screen.getByTitle('Couleur par défaut'));
+    expect(onPick).toHaveBeenCalledWith(null);
+  });
+});
 
 describe('PanelColorPicker', () => {
   it('opens the popover on click and shows every palette swatch', () => {

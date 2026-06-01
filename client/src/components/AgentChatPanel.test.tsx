@@ -4,6 +4,7 @@
 import { describe, it, expect, vi, afterEach, beforeAll } from 'vitest';
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
 import { AgentChatPanel } from './AgentChatPanel';
+import { PANEL_PALETTE } from './PanelColorPicker';
 import type { ChatMessage } from '../types';
 
 // jsdom doesn't implement Element.scrollTo — the panel calls it on each new
@@ -202,5 +203,16 @@ describe('AgentChatPanel rendering', () => {
     // User text isn't passed through markdown, so the literal asterisks would survive
     // if present. Here we just check the text appears verbatim including the newline.
     expect(screen.getByText(/ligne 1/).textContent).toContain('ligne 1\nligne 2');
+  });
+
+  it('right-click on the title bar opens a colour menu that calls onColorChange', () => {
+    const onColorChange = vi.fn();
+    render(<AgentChatPanel {...baseProps} messages={[]} onColorChange={onColorChange} />);
+    // Pas de menu tant qu'on n'a pas fait clic droit.
+    expect(screen.queryByText('Couleur')).toBeNull();
+    fireEvent.contextMenu(screen.getByText(/Claude 1/));
+    expect(screen.getByText('Couleur')).not.toBeNull();
+    fireEvent.click(screen.getByTitle(PANEL_PALETTE[2]));
+    expect(onColorChange).toHaveBeenCalledWith(PANEL_PALETTE[2]);
   });
 });

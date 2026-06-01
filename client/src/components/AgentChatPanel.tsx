@@ -19,7 +19,7 @@ import { PERMISSION_MODE_OPTIONS } from './permission-modes';
 import { buildModelOptions } from './model-options';
 import { EFFORT_OPTIONS, EFFORT_TOOLTIP } from './effort-options-ui';
 import { MIN_WIDTH } from './dock-layout';
-import { PanelColorPicker } from './PanelColorPicker';
+import { PanelColorPicker, PaletteRow } from './PanelColorPicker';
 import { readableTextColor } from '../utils/readable-text-color';
 
 const C = { ink: '#3A2E12', border: '#4A3B1A', gold: '#FFE040', cream: '#FFF8E6' };
@@ -32,6 +32,18 @@ const titleBar: CSSProperties = {
 const iconBtn: CSSProperties = {
   cursor: 'pointer', fontWeight: 700, background: 'transparent', border: 'none',
   color: 'inherit', fontFamily: 'monospace', fontSize: 14, padding: '0 4px',
+};
+
+// Menu contextuel (clic droit) — même UX/look que celui du terminal (TtyPanel).
+const menuStyle: CSSProperties = {
+  position: 'fixed', zIndex: 30, minWidth: 160,
+  backgroundColor: 'rgba(17, 24, 39, 0.98)', borderRadius: 8,
+  border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+  overflow: 'hidden', fontSize: 13, fontFamily: 'sans-serif', fontWeight: 400,
+};
+
+const menuLabel: CSSProperties = {
+  padding: '8px 14px 2px', color: '#e5e7eb', opacity: 0.55, fontSize: 11,
 };
 
 const subBar: CSSProperties = {
@@ -255,6 +267,17 @@ export function AgentChatPanel({ agentName, messages, dead, isThinking, commands
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // ── Menu contextuel (clic droit) sur la barre de titre — couleur du panel ─────
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+  useEffect(() => {
+    if (!menu) return;
+    const close = () => setMenu(null);
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenu(null); };
+    window.addEventListener('click', close);
+    window.addEventListener('keydown', onKey);
+    return () => { window.removeEventListener('click', close); window.removeEventListener('keydown', onKey); };
+  }, [menu]);
+
   // ── Width resize (left-edge drag) ────────────────────────────────────────────
   // Mirrors TtyPanel exactly: refs for maxWidth/onResizeWidth to keep one global
   // listener pair (deps []) without freezing the callbacks.
@@ -424,7 +447,10 @@ export function AgentChatPanel({ agentName, messages, dead, isThinking, commands
           background: color ?? 'transparent',
         }}
       />
-      <div style={color ? { ...titleBar, background: color, color: readableTextColor(color) } : titleBar}>
+      <div
+        style={color ? { ...titleBar, background: color, color: readableTextColor(color) } : titleBar}
+        onContextMenu={e => { e.preventDefault(); setMenu({ x: e.clientX, y: e.clientY }); }}
+      >
         <span>💬 {agentName}</span>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
           <PanelColorPicker color={color} onChange={onColorChange} />
@@ -433,6 +459,15 @@ export function AgentChatPanel({ agentName, messages, dead, isThinking, commands
           <button style={iconBtn} onClick={onClose} title="Fermer">✕</button>
         </span>
       </div>
+
+      {menu && (
+        <div style={{ ...menuStyle, left: menu.x, top: menu.y }} onClick={e => e.stopPropagation()}>
+          <div style={menuLabel}>Couleur</div>
+          <div style={{ padding: '0 14px 10px' }} onMouseDown={e => e.preventDefault()}>
+            <PaletteRow color={color} onPick={c => { onColorChange(c); setMenu(null); }} />
+          </div>
+        </div>
+      )}
 
       <div style={subBar}>
         <select

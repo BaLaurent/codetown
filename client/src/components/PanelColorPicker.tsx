@@ -20,14 +20,20 @@ const dot: CSSProperties = {
   cursor: 'pointer', padding: 0,
 };
 
+// Pastille « non définie » : contour gris neutre visible AUSSI BIEN sur la barre de
+// titre sombre du terminal (#1a1a1a) que sur le doré du chat — l'ancien contour
+// rgba(0,0,0,0.4) disparaissait sur le sombre, rendant le bouton introuvable.
 const triggerBtn: CSSProperties = {
-  ...dot, background: 'transparent', borderStyle: 'dashed',
+  ...dot, background: 'transparent', borderStyle: 'dashed', borderColor: '#9aa0a6',
+};
+
+const swatchRow: CSSProperties = {
+  display: 'flex', flexWrap: 'wrap', gap: 6, width: 132,
 };
 
 const popover: CSSProperties = {
   position: 'absolute', top: '100%', right: 0, marginTop: 4, zIndex: 40,
-  display: 'flex', flexWrap: 'wrap', gap: 6, width: 132, padding: 8,
-  background: 'rgba(17, 24, 39, 0.98)', borderRadius: 8,
+  padding: 8, background: 'rgba(17, 24, 39, 0.98)', borderRadius: 8,
   border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
 };
 
@@ -35,6 +41,36 @@ const resetBtn: CSSProperties = {
   ...dot, background: 'transparent', borderStyle: 'dashed', color: '#fff',
   display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12,
 };
+
+// Rangée de pastilles + ✕ « défaut ». Présentational et contrôlé : partagé entre la
+// popover de la pastille de titre ET les menus contextuels (clic droit) des panneaux.
+// La pastille active est entourée d'un liseré blanc. Sur fond sombre (popover/menu).
+export function PaletteRow({ color, onPick }: {
+  color: string | null;
+  onPick: (color: string | null) => void;
+}) {
+  return (
+    <div style={swatchRow}>
+      {PANEL_PALETTE.map(c => (
+        <button
+          key={c}
+          type="button"
+          title={c}
+          aria-label={`Couleur ${c}`}
+          onClick={() => onPick(c)}
+          style={{ ...dot, background: c, ...(c === color ? { outline: '2px solid #fff', outlineOffset: 1 } : null) }}
+        />
+      ))}
+      <button
+        type="button"
+        title="Couleur par défaut"
+        aria-label="Couleur par défaut"
+        onClick={() => onPick(null)}
+        style={resetBtn}
+      >✕</button>
+    </div>
+  );
+}
 
 export function PanelColorPicker({ color, onChange }: {
   color: string | null;
@@ -67,27 +103,12 @@ export function PanelColorPicker({ color, onChange }: {
         title="Couleur du panneau"
         aria-label="Couleur du panneau"
         onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
-        style={{ ...triggerBtn, background: color ?? 'transparent' }}
+        // Couleur définie → pastille pleine à contour sombre ; sinon contour gris pointillé.
+        style={{ ...triggerBtn, ...(color ? { background: color, borderStyle: 'solid', borderColor: 'rgba(0,0,0,0.4)' } : null) }}
       />
       {open && (
         <div style={popover} onClick={e => e.stopPropagation()}>
-          {PANEL_PALETTE.map(c => (
-            <button
-              key={c}
-              type="button"
-              title={c}
-              aria-label={`Couleur ${c}`}
-              onClick={() => pick(c)}
-              style={{ ...dot, background: c }}
-            />
-          ))}
-          <button
-            type="button"
-            title="Couleur par défaut"
-            aria-label="Couleur par défaut"
-            onClick={() => pick(null)}
-            style={resetBtn}
-          >✕</button>
+          <PaletteRow color={color} onPick={pick} />
         </div>
       )}
     </div>
