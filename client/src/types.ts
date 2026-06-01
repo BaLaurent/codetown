@@ -39,6 +39,7 @@ export interface PendingRequest {
   toolInput?: string;    // permission only
   title?: string;        // permission only: SDK-rendered prompt sentence
   description?: string;  // permission only: SDK-rendered subtitle
+  plan?: string;         // permission only: full plan markdown (ExitPlanMode)
 }
 
 /** A chat line for a hotel-spawned agent. One ChatMessage per content block

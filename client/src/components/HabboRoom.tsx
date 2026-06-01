@@ -98,7 +98,7 @@ export function HabboRoom({ projectId, focusRequest, actionRequest }: { projectI
   // agent waits. Either an AskUserQuestion answer or a tool permission.
   type ModalTarget = { agentId: string; displayName: string; requestId?: string } & (
     | { mode: 'question'; question: AgentQuestion }
-    | { mode: 'permission'; toolName?: string; toolInput?: string; title?: string; description?: string }
+    | { mode: 'permission'; toolName?: string; toolInput?: string; title?: string; description?: string; plan?: string }
   );
   const [modalTarget, setModalTarget] = useState<ModalTarget | null>(null);
 
@@ -131,7 +131,7 @@ export function HabboRoom({ projectId, focusRequest, actionRequest }: { projectI
       setModalTarget({
         agentId, displayName: agent.displayName, requestId: pending.requestId,
         mode: 'permission', toolName: pending.toolName, toolInput: pending.toolInput,
-        title: pending.title, description: pending.description,
+        title: pending.title, description: pending.description, plan: pending.plan,
       });
     } else if (agent.question?.questions?.length) {
       setModalTarget({
@@ -1612,6 +1612,7 @@ export function HabboRoom({ projectId, focusRequest, actionRequest }: { projectI
           toolInput={modalTarget.mode === 'permission' ? modalTarget.toolInput : undefined}
           title={modalTarget.mode === 'permission' ? modalTarget.title : undefined}
           description={modalTarget.mode === 'permission' ? modalTarget.description : undefined}
+          plan={modalTarget.mode === 'permission' ? modalTarget.plan : undefined}
           onClose={() => setModalTarget(null)}
           onSubmitAnswers={(answers: QuestionAnswer[]) => {
             // Route the answer back to the agent if a blocking hook is waiting.
@@ -1622,10 +1623,10 @@ export function HabboRoom({ projectId, focusRequest, actionRequest }: { projectI
             }
             setModalTarget(null);
           }}
-          onDecide={(allow: boolean) => {
+          onDecide={(allow: boolean, feedback?: string) => {
             if (modalTarget.requestId) {
               postOutcome(modalTarget.agentId, modalTarget.requestId,
-                allow ? { outcome: 'allow' } : { outcome: 'deny', reason: 'Refusé via CodeMap' });
+                allow ? { outcome: 'allow' } : { outcome: 'deny', reason: feedback ?? 'Refusé via CodeMap' });
             }
             setModalTarget(null);
           }}

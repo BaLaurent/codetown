@@ -153,9 +153,9 @@ export function useFileActivity(projectId?: string): {
           console.log('Layout update received from server');
           layoutVersionRef.current++;
         } else if (message.type === 'permission-request') {
-          const { agentId, requestId, kind, toolName, toolInput, title, description } =
+          const { agentId, requestId, kind, toolName, toolInput, title, description, plan } =
             message.data as { agentId: string } & PendingRequest;
-          pendingRequestsRef.current.set(agentId, { requestId, kind, toolName, toolInput, title, description });
+          pendingRequestsRef.current.set(agentId, { requestId, kind, toolName, toolInput, title, description, plan });
           // Bump the chat counter so HabboRoom re-renders and can auto-open the
           // permission modal for the agent whose chat is focused.
           chatVersionRef.current++;

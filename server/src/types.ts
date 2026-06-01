@@ -111,6 +111,7 @@ export interface PendingRequestInfo {
   toolInput?: string;    // permission only: abbreviated input (command, file…)
   title?: string;        // permission only: SDK-rendered prompt sentence
   description?: string;  // permission only: SDK-rendered subtitle
+  plan?: string;         // permission only: full plan markdown (ExitPlanMode)
 }
 
 /** Tells clients to dismiss a resolved interaction (multi-client consistency). */

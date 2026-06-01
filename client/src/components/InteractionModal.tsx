@@ -6,6 +6,7 @@
 // wired by the parent via onSubmit (Phase B-3).
 import { useState, type CSSProperties } from 'react';
 import type { AgentQuestion } from '../types';
+import { MarkdownBody } from './MarkdownBody';
 
 export interface QuestionAnswer {
   selected: string[];  // chosen option labels
@@ -107,8 +108,25 @@ const toolBox: CSSProperties = {
   whiteSpace: 'pre-wrap', wordBreak: 'break-word',
 };
 
+// Plan review (ExitPlanMode): a framed, scrollable box holding the rendered plan
+// markdown. The modal body already scrolls, but capping the plan keeps the
+// decision buttons reachable for long plans.
+const planBox: CSSProperties = {
+  background: '#fff', border: `2px solid ${COLORS.border}`,
+  padding: '8px 10px', maxHeight: '52vh', overflowY: 'auto',
+  fontSize: 13, lineHeight: 1.45, wordBreak: 'break-word',
+};
+
+// Plan-rejection note: a textarea under the plan, styled like the question's
+// "Autre…" field but taller and resizable.
+const feedbackInput: CSSProperties = {
+  width: '100%', boxSizing: 'border-box', marginTop: 8, padding: '6px 8px',
+  fontFamily: 'monospace', fontSize: 12, color: COLORS.ink, resize: 'vertical',
+  background: '#fff', border: `2px solid ${COLORS.border}`,
+};
+
 export function InteractionModal({
-  agentName, mode, question, toolName, toolInput, title, description, onSubmitAnswers, onDecide, onClose,
+  agentName, mode, question, toolName, toolInput, title, description, plan, onSubmitAnswers, onDecide, onClose,
 }: {
   agentName: string;
   mode: 'question' | 'permission';
@@ -117,14 +135,19 @@ export function InteractionModal({
   toolInput?: string;
   title?: string;        // permission: SDK-rendered prompt sentence
   description?: string;  // permission: SDK-rendered subtitle
+  plan?: string;         // permission: full plan markdown (ExitPlanMode)
   onSubmitAnswers?: (answers: QuestionAnswer[]) => void;
-  onDecide?: (allow: boolean) => void;
+  // feedback: free-text the user attaches when refusing a plan, sent back to the
+  // agent as the denial message so it can rework ("non, fais plutôt comme ça").
+  onDecide?: (allow: boolean, feedback?: string) => void;
   onClose: () => void;
 }) {
   const questions = question?.questions ?? [];
   const [answers, setAnswers] = useState<QuestionAnswer[]>(
     () => questions.map(() => ({ selected: [], other: '' }))
   );
+  // Plan-rejection note (ExitPlanMode only). Empty → a generic refusal is sent.
+  const [feedback, setFeedback] = useState('');
 
   const toggle = (qi: number, label: string, multi: boolean) => {
     setAnswers(prev => prev.map((a, i) => {
@@ -146,22 +169,47 @@ export function InteractionModal({
   const complete = answers.every(a => a.selected.length > 0 || a.other.trim().length > 0);
 
   if (mode === 'permission') {
+    // ExitPlanMode carries a full plan to review: render it as markdown and frame
+    // the decision as "approve & start" / "keep planning" instead of the generic
+    // allow/deny on a raw tool input.
     return (
       <div style={overlay} onClick={onClose}>
         <div style={modal} onClick={e => e.stopPropagation()}>
           <div style={titleBar}>
-            <span>{agentName} demande la permission</span>
+            <span>{agentName} {plan ? 'propose un plan' : 'demande la permission'}</span>
             <button style={closeBtn} onClick={onClose} title="Fermer">✕</button>
           </div>
           <div style={body}>
-            <div style={{ marginBottom: 4 }}>{title || "Autoriser l'exécution de :"}</div>
-            <div style={headerChip}>{toolName || 'Tool'}</div>
-            {toolInput && <div style={toolBox}>{toolInput}</div>}
-            {description && <div style={{ fontSize: 12, opacity: 0.7, marginTop: 6 }}>{description}</div>}
+            {plan ? (
+              <>
+                <div style={planBox}><MarkdownBody source={plan} /></div>
+                <textarea
+                  style={feedbackInput}
+                  placeholder="Remarques (optionnel) — renvoyées à l'agent si tu gardes en planification…"
+                  value={feedback}
+                  onChange={e => setFeedback(e.target.value)}
+                  rows={2}
+                />
+              </>
+            ) : (
+              <>
+                <div style={{ marginBottom: 4 }}>{title || "Autoriser l'exécution de :"}</div>
+                <div style={headerChip}>{toolName || 'Tool'}</div>
+                {toolInput && <div style={toolBox}>{toolInput}</div>}
+                {description && <div style={{ fontSize: 12, opacity: 0.7, marginTop: 6 }}>{description}</div>}
+              </>
+            )}
           </div>
           <div style={footer}>
-            <button style={decisionBtn('deny')} onClick={() => onDecide?.(false)}>Refuser</button>
-            <button style={decisionBtn('allow')} onClick={() => onDecide?.(true)}>Autoriser</button>
+            <button
+              style={decisionBtn('deny')}
+              onClick={() => onDecide?.(false, plan ? (feedback.trim() || undefined) : undefined)}
+            >
+              {plan ? 'Garder en planification' : 'Refuser'}
+            </button>
+            <button style={decisionBtn('allow')} onClick={() => onDecide?.(true)}>
+              {plan ? 'Approuver le plan' : 'Autoriser'}
+            </button>
           </div>
         </div>
       </div>

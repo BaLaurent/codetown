@@ -19,6 +19,7 @@ export interface PermissionRequest {
   toolInput?: string;   // compact preview (command, path, pattern…)
   title?: string;       // SDK-rendered prompt sentence, when present
   description?: string; // SDK-rendered subtitle, when present
+  plan?: string;        // ExitPlanMode only: full plan markdown to render
 }
 
 export interface RunnerCallbacks {
@@ -95,6 +96,25 @@ function flattenToolResultContent(content: unknown): string {
     })
     .filter(Boolean)
     .join('\n');
+}
+
+// The one tool that presents a plan and asks to leave plan mode. Its input is
+// `{ plan: <markdown> }`; approving it must transition the session out of plan
+// mode (the SDK leaves that to the host — see requestPermission in index.ts).
+const EXIT_PLAN_MODE = 'ExitPlanMode';
+
+// Full, untruncated plan markdown carried by an ExitPlanMode call, for the hotel
+// modal to render. Unlike previewToolInput (compact, 100-char cap) this keeps the
+// whole plan — a truncated JSON blob is exactly the bug this fixes.
+export function planFromToolInput(toolName: string, input: Record<string, unknown>): string | undefined {
+  if (toolName !== EXIT_PLAN_MODE) return undefined;
+  return typeof input.plan === 'string' ? input.plan : undefined;
+}
+
+// True when an approved decision should drop the session out of plan mode, i.e.
+// the user approved the proposed plan and wants the agent to start executing.
+export function shouldExitPlanMode(toolName: string, outcome: InteractionOutcome): boolean {
+  return toolName === EXIT_PLAN_MODE && outcome.outcome === 'allow';
 }
 
 // Translate the hotel user's decision into the SDK's allow/deny shape. Allow
@@ -187,6 +207,7 @@ export function spawnAgent(
       toolInput: previewToolInput(toolInput),
       title: ctx.title,
       description: ctx.description,
+      plan: planFromToolInput(toolName, toolInput),
     });
     return outcomeToPermissionResult(outcome, toolInput);
   };

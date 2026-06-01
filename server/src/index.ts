@@ -19,7 +19,7 @@ import { attachmentDir, reserveAttachmentPath } from './attachments.js';
 import { fileFromActivityEvent } from './agent-file.js';
 import { registerRequest, awaitDecision, resolveRequest, resolveAgentRequests } from './pending-requests.js';
 import { shouldFlagWaitingForPermission, clearPendingInteraction } from './pending-interaction.js';
-import { spawnAgent, sendMessage as runnerSendMessage, stopAgent, getAgentCapabilities, getProjectCapabilities, setMode as runnerSetMode, setModel as runnerSetModel, setMaxThinkingTokens as runnerSetMaxThinkingTokens, isRunning, type PermissionRequest } from './agent-runner/index.js';
+import { spawnAgent, sendMessage as runnerSendMessage, stopAgent, getAgentCapabilities, getProjectCapabilities, setMode as runnerSetMode, setModel as runnerSetModel, setMaxThinkingTokens as runnerSetMaxThinkingTokens, isRunning, shouldExitPlanMode, type PermissionRequest } from './agent-runner/index.js';
 import type { PermissionMode } from '@anthropic-ai/claude-agent-sdk';
 import { resolveEffortOptions, effortToMaxThinkingTokens, isEffortValue } from './effort-options.js';
 
@@ -625,9 +625,19 @@ async function requestPermission(agentId: string, req: PermissionRequest): Promi
   if (state) { state.waitingForInput = true; wsManager.broadcast('thinking', getAgentStatesArray()); }
   wsManager.broadcast('permission-request', {
     agentId, requestId: req.toolUseID, kind: 'permission',
-    toolName: req.toolName, toolInput: req.toolInput, title: req.title, description: req.description,
+    toolName: req.toolName, toolInput: req.toolInput, title: req.title, description: req.description, plan: req.plan,
   });
   const outcome = await awaitDecision(agentId, req.toolUseID, PERMISSION_WAIT_MS);
+  // Approving ExitPlanMode leaves plan mode. The CLI already drops the live
+  // session to a prompting mode on approval (verified: subsequent writes still
+  // hit canUseTool), but it never tells us — so without this the chat header
+  // would keep showing "plan" while the agent executes. Pin 'default' on the SDK
+  // session AND mirror it into the hotel state so the two agree. (The set runs
+  // concurrently with the pending canUseTool — measured at ~0.1s, no deadlock.)
+  if (shouldExitPlanMode(req.toolName, outcome)) {
+    await runnerSetMode(agentId, 'default');
+    if (state) state.permissionMode = 'default';
+  }
   if (state) { clearPendingInteraction(state); wsManager.broadcast('thinking', getAgentStatesArray()); }
   // On timeout the POST /permission handler never ran, so close any open modal.
   if (outcome.outcome === 'timeout') wsManager.broadcast('permission-resolved', { agentId, requestId: req.toolUseID });
