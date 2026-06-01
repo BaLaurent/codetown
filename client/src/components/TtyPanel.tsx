@@ -5,6 +5,8 @@ import { WebLinksAddon } from 'xterm-addon-web-links';
 import 'xterm/css/xterm.css';
 import { cwdShort } from '../utils/path-display';
 import { MIN_WIDTH } from './dock-layout';
+import { PanelColorPicker } from './PanelColorPicker';
+import { readableTextColor } from '../utils/readable-text-color';
 
 const WS_URL = 'ws://localhost:5174';
 
@@ -50,9 +52,11 @@ interface TtyPanelProps {
   onMinimize: () => void;
   onToggleMaximize: () => void;
   onRename: (newTitle: string) => void;
+  color: string | null;
+  onColorChange: (color: string | null) => void;
 }
 
-export function TtyPanel({ ttyId, title, cwd, rightOffset, width, maxWidth, active, isMaximized, onResizeWidth, onClose, onMinimize, onToggleMaximize, onRename }: TtyPanelProps) {
+export function TtyPanel({ ttyId, title, cwd, rightOffset, width, maxWidth, active, isMaximized, onResizeWidth, onClose, onMinimize, onToggleMaximize, onRename, color, onColorChange }: TtyPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
@@ -233,13 +237,18 @@ export function TtyPanel({ ttyId, title, cwd, rightOffset, width, maxWidth, acti
 
   const short = cwdShort(cwd);
 
+  // Look par défaut (#333 / #1a1a1a) tant qu'aucune couleur n'est choisie.
+  const borderColor = color ?? '#333';
+  const titleBg = color ?? '#1a1a1a';
+  const titleFg = color ? readableTextColor(color) : '#f0f0f0';
+
   return (
     <div style={{
       position: 'absolute', bottom: 16, right: rightOffset, zIndex: active ? 26 : 25,
       width, height: 'min(52vh, 520px)',
       display: 'flex', flexDirection: 'column', fontFamily: 'monospace',
       background: '#0d0d0d', color: '#f0f0f0',
-      border: '4px solid #333', boxShadow: '8px 8px 0 rgba(0,0,0,0.35)',
+      border: `4px solid ${borderColor}`, boxShadow: '8px 8px 0 rgba(0,0,0,0.35)',
       overflow: 'visible',
       // Caché mais TOUJOURS monté : visibility (≠ display:none) garde des dimensions
       // réelles pour fitAddon.fit(), et conserve le xterm + la WS vivants au switch.
@@ -251,12 +260,13 @@ export function TtyPanel({ ttyId, title, cwd, rightOffset, width, maxWidth, acti
         onMouseDown={onResizeMouseDown}
         style={{
           position: 'absolute', left: -4, top: 0, bottom: 0, width: 8,
-          cursor: 'ew-resize', zIndex: 1,
+          cursor: 'ew-resize', zIndex: 2,
+          background: color ?? 'transparent',
         }}
       />
 
       <div
-        style={titleBarStyle}
+        style={{ ...titleBarStyle, background: titleBg, color: titleFg }}
         onContextMenu={e => { e.preventDefault(); setMenu({ x: e.clientX, y: e.clientY }); }}
       >
         <span style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0 }}>
@@ -286,7 +296,8 @@ export function TtyPanel({ ttyId, title, cwd, rightOffset, width, maxWidth, acti
         }}>
           {short}
         </span>
-        <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: 2, flexShrink: 0, alignItems: 'center' }}>
+          <PanelColorPicker color={color} onChange={onColorChange} />
           <button style={iconBtn} onClick={onToggleMaximize} title={isMaximized ? 'Restaurer' : 'Maximiser'}>{isMaximized ? '🗗' : '🗖'}</button>
           <button style={iconBtn} onClick={onMinimize} title="Réduire">─</button>
           <button style={iconBtn} onClick={onClose} title="Fermer le terminal">✕</button>
