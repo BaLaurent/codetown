@@ -138,11 +138,14 @@ function layoutFloating(panels: DockPanel[], widths: Record<string, number>, bud
 // = largeur actuelle + ce que le voisin de GAUCHE peut céder jusqu'à MIN_WIDTH
 // (la poignée est sur le bord gauche du panneau).
 function layoutDocked(panels: DockPanel[], widths: Record<string, number>, budget: number): DockLayout {
+  // docké : panneaux collés, la poignée vit sur la couture (cf. spec).
+  const gap = 0;
+
   // 1) Sous-ensemble visible : du plus récent au plus ancien tant qu'ils tiennent à MIN_WIDTH.
   const visible: DockPanel[] = [];
   for (let i = panels.length - 1; i >= 0; i--) {
     const n = visible.length + 1;
-    const needed = n * MIN_WIDTH + (n - 1) * GAP;
+    const needed = n * MIN_WIDTH + (n - 1) * gap;
     if (needed > budget && visible.length > 0) break;
     visible.unshift(panels[i]); // garde l'ordre gauche→droite
   }
@@ -150,7 +153,7 @@ function layoutDocked(panels: DockPanel[], widths: Record<string, number>, budge
 
   // 2) Répartition proportionnelle aux largeurs stockées (défaut = DEFAULT_WIDTH).
   const n = visible.length;
-  const available = budget - GAP * (n - 1);
+  const available = budget - gap * (n - 1);
   const stored = visible.map(p => widths[panelKey(p)] ?? DEFAULT_WIDTH);
   const sum = stored.reduce((s, w) => s + w, 0);
   const raw = stored.map(w => Math.max(MIN_WIDTH, Math.round((w / sum) * available)));
@@ -164,7 +167,7 @@ function layoutDocked(panels: DockPanel[], widths: Record<string, number>, budge
   }
 
   // 3) Place de gauche à droite ; rightOffset mesuré depuis le bord droit.
-  const totalRowWidth = raw.reduce((s, w) => s + w, 0) + GAP * (n - 1); // == budget
+  const totalRowWidth = raw.reduce((s, w) => s + w, 0) + gap * (n - 1); // == budget
   const placements: DockPlacement[] = [];
   let leftCursor = 0;
   for (let i = 0; i < n; i++) {
@@ -179,7 +182,7 @@ function layoutDocked(panels: DockPanel[], widths: Record<string, number>, budge
       key: panelKey(visible[i]), kind: visible[i].kind, id: visible[i].id,
       rightOffset, effectiveWidth: w, maxWidth,
     });
-    leftCursor += w + GAP;
+    leftCursor += w + gap;
   }
   return { placements, budget };
 }

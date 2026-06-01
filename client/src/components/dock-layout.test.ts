@@ -64,18 +64,21 @@ describe('computeDockLayout — politique docké (étirée)', () => {
     expect(placements[0].rightOffset).toBe(MARGIN);
   });
 
-  it('deux panneaux par défaut se partagent la barre à parts égales', () => {
+  it('deux panneaux se partagent la barre à parts égales (collés, gap 0)', () => {
     const { placements, budget } = computeDockLayout([tty('a'), tty('b')], {}, WIDE, 'docked', null);
-    const each = (budget - GAP) / 2;
+    const each = budget / 2;
     expect(placements.map(p => p.effectiveWidth)).toEqual([each, each]);
-    expect(placements[0].effectiveWidth + GAP + placements[1].effectiveWidth).toBe(budget);
+    expect(placements[0].effectiveWidth + placements[1].effectiveWidth).toBe(budget);
+    // jointifs : le plus à droite colle à la marge ; le gauche commence un cran (= each) plus loin.
+    expect(placements[1].rightOffset).toBe(MARGIN);
+    expect(placements[0].rightOffset).toBe(MARGIN + each);
   });
 
   it('largeurs custom : réparties proportionnellement, somme == budget', () => {
     const { placements, budget } = computeDockLayout(
       [tty('a'), tty('b')], { 'tty:a': 300, 'tty:b': 900 }, WIDE, 'docked', null,
     );
-    const total = placements.reduce((s, p) => s + p.effectiveWidth, 0) + GAP * (placements.length - 1);
+    const total = placements.reduce((s, p) => s + p.effectiveWidth, 0);
     expect(total).toBe(budget);
     expect(placements.find(p => p.id === 'b')!.effectiveWidth)
       .toBeGreaterThan(placements.find(p => p.id === 'a')!.effectiveWidth);
