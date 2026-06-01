@@ -44,6 +44,8 @@ const baseProps = {
   onToggleMaximize: vi.fn(),
   color: null,
   onColorChange: () => {},
+  textColor: null,
+  onTextColorChange: () => {},
 };
 
 function msg(partial: Partial<ChatMessage> & Pick<ChatMessage, 'role' | 'content'>): ChatMessage {
@@ -205,14 +207,20 @@ describe('AgentChatPanel rendering', () => {
     expect(screen.getByText(/ligne 1/).textContent).toContain('ligne 1\nligne 2');
   });
 
-  it('right-click on the title bar opens a colour menu that calls onColorChange', () => {
+  it('right-click on the title bar opens an appearance menu (Fond + Texte)', () => {
     const onColorChange = vi.fn();
-    render(<AgentChatPanel {...baseProps} messages={[]} onColorChange={onColorChange} />);
+    const onTextColorChange = vi.fn();
+    render(<AgentChatPanel {...baseProps} messages={[]} onColorChange={onColorChange} onTextColorChange={onTextColorChange} />);
     // Pas de menu tant qu'on n'a pas fait clic droit.
-    expect(screen.queryByText('Couleur')).toBeNull();
+    expect(screen.queryByText('Fond')).toBeNull();
     fireEvent.contextMenu(screen.getByText(/Claude 1/));
-    expect(screen.getByText('Couleur')).not.toBeNull();
-    fireEvent.click(screen.getByTitle(PANEL_PALETTE[2]));
+    expect(screen.getByText('Fond')).not.toBeNull();
+    expect(screen.getByText('Texte')).not.toBeNull();
+    // Deux sections → chaque pastille existe en double ([0]=Fond, [1]=Texte).
+    const swatches = screen.getAllByTitle(PANEL_PALETTE[2]);
+    fireEvent.click(swatches[0]);
     expect(onColorChange).toHaveBeenCalledWith(PANEL_PALETTE[2]);
+    fireEvent.click(swatches[1]);
+    expect(onTextColorChange).toHaveBeenCalledWith(PANEL_PALETTE[2]);
   });
 });

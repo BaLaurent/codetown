@@ -9,7 +9,7 @@
 import { createContext, useCallback, useContext, useMemo, type ReactNode } from 'react';
 import { ChatPanelContainer } from './ChatPanelContainer';
 import { useDock } from './DockHost';
-import { clearPanelColor } from '../utils/panel-colors';
+import { clearPanelColor, clearPanelTextColor } from '../utils/panel-colors';
 
 interface ChatControl {
   openChatIds: string[];
@@ -34,6 +34,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const openChat = useCallback((agentId: string) => openPanel('chat', agentId), [openPanel]);
   const closeChat = useCallback((agentId: string) => {
     clearPanelColor(`chat:${agentId}`);
+    clearPanelTextColor(`chat:${agentId}`);
     closePanel('chat', agentId);
   }, [closePanel]);
 

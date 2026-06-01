@@ -19,8 +19,8 @@ import { PERMISSION_MODE_OPTIONS } from './permission-modes';
 import { buildModelOptions } from './model-options';
 import { EFFORT_OPTIONS, EFFORT_TOOLTIP } from './effort-options-ui';
 import { MIN_WIDTH } from './dock-layout';
-import { PanelColorPicker, PaletteRow } from './PanelColorPicker';
-import { readableTextColor } from '../utils/readable-text-color';
+import { PanelColorPicker, PanelAppearance } from './PanelColorPicker';
+import { defaultTextColor } from '../utils/readable-text-color';
 
 const C = { ink: '#3A2E12', border: '#4A3B1A', gold: '#FFE040', cream: '#FFF8E6' };
 
@@ -42,9 +42,6 @@ const menuStyle: CSSProperties = {
   overflow: 'hidden', fontSize: 13, fontFamily: 'sans-serif', fontWeight: 400,
 };
 
-const menuLabel: CSSProperties = {
-  padding: '8px 14px 2px', color: '#e5e7eb', opacity: 0.55, fontSize: 11,
-};
 
 const subBar: CSSProperties = {
   display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
@@ -230,7 +227,7 @@ function ThinkingBubble({ content }: { content: string }) {
   );
 }
 
-export function AgentChatPanel({ agentName, messages, dead, isThinking, commands, files, models, model, mode, effort, onModelChange, onModeChange, onEffortChange, onSend, onStop, onClose, onAttach, rightOffset, width, maxWidth, active, isMaximized, onResizeWidth, onToggleMaximize, color, onColorChange }: {
+export function AgentChatPanel({ agentName, messages, dead, isThinking, commands, files, models, model, mode, effort, onModelChange, onModeChange, onEffortChange, onSend, onStop, onClose, onAttach, rightOffset, width, maxWidth, active, isMaximized, onResizeWidth, onToggleMaximize, color, onColorChange, textColor, onTextColorChange }: {
   agentName: string;
   messages: ChatMessage[];
   dead?: boolean;  // session ended/crashed → input is disabled
@@ -261,6 +258,8 @@ export function AgentChatPanel({ agentName, messages, dead, isThinking, commands
   // Couleur personnalisée du panel (null = thème or par défaut)
   color: string | null;
   onColorChange: (color: string | null) => void;
+  textColor: string | null;
+  onTextColorChange: (color: string | null) => void;
 }) {
   const [draft, setDraft] = useState('');
   const [attachStatusText, setAttachStatusText] = useState<string | null>(null);
@@ -322,6 +321,10 @@ export function AgentChatPanel({ agentName, messages, dead, isThinking, commands
     visibility: active ? 'visible' : 'hidden',
     pointerEvents: active ? 'auto' : 'none',
   };
+
+  // Texte de la barre de titre : override explicite, sinon inverse corrigé du fond,
+  // sinon le thème par défaut (undefined → on n'écrase pas la couleur héritée du panel).
+  const titleFg = textColor ?? (color ? defaultTextColor(color) : undefined);
 
   // Local mirrors so a pick reflects immediately, then resyncs if the
   // server-confirmed value (prop) changes.
@@ -448,12 +451,12 @@ export function AgentChatPanel({ agentName, messages, dead, isThinking, commands
         }}
       />
       <div
-        style={color ? { ...titleBar, background: color, color: readableTextColor(color) } : titleBar}
+        style={{ ...titleBar, ...(color ? { background: color } : null), ...(titleFg ? { color: titleFg } : null) }}
         onContextMenu={e => { e.preventDefault(); setMenu({ x: e.clientX, y: e.clientY }); }}
       >
         <span>💬 {agentName}</span>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
-          <PanelColorPicker color={color} onChange={onColorChange} />
+          <PanelColorPicker bg={color} text={textColor} onBgChange={onColorChange} onTextChange={onTextColorChange} />
           <button style={iconBtn} onClick={onToggleMaximize} title={isMaximized ? 'Restaurer' : 'Maximiser'}>{isMaximized ? '🗗' : '🗖'}</button>
           <button style={iconBtn} onClick={onStop} title="Arrêter l'agent">⏹</button>
           <button style={iconBtn} onClick={onClose} title="Fermer">✕</button>
@@ -462,9 +465,8 @@ export function AgentChatPanel({ agentName, messages, dead, isThinking, commands
 
       {menu && (
         <div style={{ ...menuStyle, left: menu.x, top: menu.y }} onClick={e => e.stopPropagation()}>
-          <div style={menuLabel}>Couleur</div>
-          <div style={{ padding: '0 14px 10px' }} onMouseDown={e => e.preventDefault()}>
-            <PaletteRow color={color} onPick={c => { onColorChange(c); setMenu(null); }} />
+          <div style={{ padding: '8px 14px 10px' }}>
+            <PanelAppearance bg={color} text={textColor} onBgChange={onColorChange} onTextChange={onTextColorChange} />
           </div>
         </div>
       )}

@@ -1,7 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useState, useMemo, type ReactNode } from 'react';
 import { TtyPanel } from './TtyPanel';
 import { getTtyTitle, setTtyTitle, clearTtyTitle } from '../utils/tty-titles';
-import { getPanelColor, setPanelColor, clearPanelColor } from '../utils/panel-colors';
+import {
+  getPanelColor, setPanelColor, clearPanelColor,
+  getPanelTextColor, setPanelTextColor, clearPanelTextColor,
+} from '../utils/panel-colors';
 import { DEFAULT_WIDTH } from './dock-layout';
 import { useDock } from './DockHost';
 
@@ -84,6 +87,7 @@ export function TtyProvider({ children }: { children: ReactNode }) {
     fetch(`${API_URL}/tty/${ttyId}`, { method: 'DELETE' }).catch(() => { /* ignore */ });
     clearTtyTitle(ttyId);
     clearPanelColor(`tty:${ttyId}`);
+    clearPanelTextColor(`tty:${ttyId}`);
     setTtySessions(prev => prev.filter(s => s.ttyId !== ttyId));
     closePanel('tty', ttyId);
   }, [closePanel]);
@@ -133,6 +137,11 @@ export function TtyProvider({ children }: { children: ReactNode }) {
             color={getPanelColor(key)}
             onColorChange={c => {
               if (c === null) clearPanelColor(key); else setPanelColor(key, c);
+              bumpColor(v => v + 1);
+            }}
+            textColor={getPanelTextColor(key)}
+            onTextColorChange={c => {
+              if (c === null) clearPanelTextColor(key); else setPanelTextColor(key, c);
               bumpColor(v => v + 1);
             }}
           />
