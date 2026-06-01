@@ -54,6 +54,26 @@ export function redistributeWidth(
   return { ...widths, [key]: cur + grow, [rightKey]: rightCur - grow };
 }
 
+// Resize docké : on redistribue dans l'espace EFFECTIF (les largeurs rendues, qui
+// somment déjà à `available`), PAS dans l'espace stocké — sinon le drag déborde et le
+// voisin n'atteint jamais MIN_WIDTH. On persiste les largeurs effectives comme nouvelles
+// largeurs stockées (sum == available → facteur de scaling 1 → drag 1:1, convergent).
+export function resizeDockedWidths(
+  order: DockPanel[],
+  widths: Record<string, number>,
+  viewportWidth: number,
+  maximizedKey: string | null,
+  key: string,
+  desiredWidth: number,
+): Record<string, number> {
+  const { placements } = computeDockLayout(order, widths, viewportWidth, 'docked', maximizedKey);
+  const visibleKeys = placements.map(p => p.key);
+  const effWidths: Record<string, number> = {};
+  for (const p of placements) effWidths[p.key] = p.effectiveWidth;
+  const redistributed = redistributeWidth(visibleKeys, effWidths, key, desiredWidth);
+  return { ...widths, ...redistributed };
+}
+
 // Hauteur réservée en bas pour le dock (synchro avec le CSS du panneau).
 export function computeDockHeight(mode: LayoutMode, openCount: number, viewportHeight: number): number {
   if (mode !== 'docked' || openCount === 0) return 0;

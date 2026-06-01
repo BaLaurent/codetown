@@ -5,7 +5,7 @@
 // de LEURS données (sessions, threads) et lisent placementFor() pour rendre.
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
-  computeDockLayout, redistributeWidth, computeDockHeight,
+  computeDockLayout, resizeDockedWidths, computeDockHeight,
   type DockPanel, type DockPlacement, type LayoutMode, type PanelKind,
 } from './dock-layout';
 
@@ -81,9 +81,7 @@ export function DockProvider({ children }: { children: ReactNode }) {
   const setWidth = useCallback((key: string, width: number) => {
     setWidths(prev => {
       if (mode !== 'docked') return { ...prev, [key]: width };
-      const visibleKeys = computeDockLayout(order, prev, vw, 'docked', maximizedKey)
-        .placements.map(p => p.key);
-      return redistributeWidth(visibleKeys, prev, key, width);
+      return resizeDockedWidths(order, prev, vw, maximizedKey, key, width);
     });
   }, [mode, order, vw, maximizedKey]);
 

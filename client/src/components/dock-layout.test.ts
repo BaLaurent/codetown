@@ -1,8 +1,8 @@
 // client/src/components/dock-layout.test.ts
 import { describe, it, expect } from 'vitest';
 import {
-  computeDockLayout, panelKey, redistributeWidth, computeDockHeight,
-  DEFAULT_WIDTH, GAP, MARGIN,
+  computeDockLayout, panelKey, redistributeWidth, resizeDockedWidths, computeDockHeight,
+  DEFAULT_WIDTH, GAP, MARGIN, MIN_WIDTH,
   type DockPanel,
 } from './dock-layout';
 
@@ -161,5 +161,29 @@ describe('computeDockHeight', () => {
   it('hauteur panneau + marges en docké avec des panneaux (plafond 520)', () => {
     expect(computeDockHeight('docked', 1, 2000)).toBe(520 + 32); // 0.52*2000=1040 → plafonné 520
     expect(computeDockHeight('docked', 1, 800)).toBe(Math.round(0.52 * 800) + 32);
+  });
+});
+
+describe('resizeDockedWidths (drag docké 1:1, convergent)', () => {
+  it('un drag effectif déplace ~1:1 et la somme effective reste constante (remplit la barre)', () => {
+    const order = [tty('a'), tty('b')];
+    const before = computeDockLayout(order, {}, 1600, 'docked', null).placements;
+    const a0 = before.find(p => p.id === 'a')!.effectiveWidth;
+    const sumBefore = before.reduce((s, p) => s + p.effectiveWidth, 0);
+
+    const next = resizeDockedWidths(order, {}, 1600, null, 'tty:a', a0 + 100);
+    const after = computeDockLayout(order, next, 1600, 'docked', null).placements;
+    const a1 = after.find(p => p.id === 'a')!.effectiveWidth;
+    const sumAfter = after.reduce((s, p) => s + p.effectiveWidth, 0);
+
+    expect(a1).toBe(a0 + 100);     // 1:1, pas d'overshoot
+    expect(sumAfter).toBe(sumBefore); // toujours == available (barre pleine)
+  });
+
+  it('respecte MIN_WIDTH du voisin (ne le pousse pas en dessous)', () => {
+    const order = [tty('a'), tty('b')];
+    const next = resizeDockedWidths(order, {}, 1600, null, 'tty:a', 5000); // drag énorme
+    const after = computeDockLayout(order, next, 1600, 'docked', null).placements;
+    expect(after.find(p => p.id === 'b')!.effectiveWidth).toBe(MIN_WIDTH);
   });
 });

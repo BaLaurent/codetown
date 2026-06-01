@@ -11,7 +11,7 @@ import { useAgentStream } from '../hooks/AgentStream';
 import { mergeTranscript } from '../utils/chat-transcript';
 import { getAgentName, AGENT_NAMES_CHANGED } from '../utils/agent-names';
 import type { AgentCapabilities, ChatMessage, GraphData, ModelOption, SlashCommand } from '../types';
-import type { DockPlacement } from './dock-layout';
+import { DEFAULT_WIDTH, type DockPlacement } from './dock-layout';
 
 const API_URL = 'http://localhost:5174/api';
 
@@ -193,8 +193,8 @@ export function ChatPanelContainer({ agentId, placement, active, isMaximized, on
       onClose={onClose}
       onAttach={attachFiles}
       rightOffset={placement?.rightOffset ?? 16}
-      width={placement?.effectiveWidth ?? 420}
-      maxWidth={placement?.maxWidth ?? 420}
+      width={placement?.effectiveWidth ?? DEFAULT_WIDTH}
+      maxWidth={placement?.maxWidth ?? DEFAULT_WIDTH}
       active={active}
       isMaximized={isMaximized}
       onResizeWidth={onResizeWidth}

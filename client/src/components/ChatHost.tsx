@@ -11,7 +11,6 @@ import { ChatPanelContainer } from './ChatPanelContainer';
 import { useDock } from './DockHost';
 
 interface ChatControl {
-  chatAgentId: string | null;
   openChatIds: string[];
   openChat: (agentId: string) => void;
   closeChat: (agentId: string) => void;
@@ -34,14 +33,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const openChat = useCallback((agentId: string) => openPanel('chat', agentId), [openPanel]);
   const closeChat = useCallback((agentId: string) => closePanel('chat', agentId), [closePanel]);
 
-  // chatAgentId: backward-compat for existing callers that read "the focused chat"
-  // (HabboRoom uses it for pending-request auto-modal). Returns the most recently
-  // opened chat, or null when none are open.
-  const chatAgentId = openChatIds.length ? openChatIds[openChatIds.length - 1] : null;
-
   const control = useMemo<ChatControl>(
-    () => ({ chatAgentId, openChatIds, openChat, closeChat }),
-    [chatAgentId, openChatIds, openChat, closeChat],
+    () => ({ openChatIds, openChat, closeChat }),
+    [openChatIds, openChat, closeChat],
   );
 
   return (
