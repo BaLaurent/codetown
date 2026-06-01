@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { getPanelColor, setPanelColor, clearPanelColor } from './panel-colors';
+import {
+  getPanelColor, setPanelColor, clearPanelColor,
+  getPanelTextColor, setPanelTextColor, clearPanelTextColor,
+} from './panel-colors';
 
 describe('panel-colors', () => {
   let storage: Record<string, string> = {};
@@ -54,5 +57,23 @@ describe('panel-colors', () => {
   it('returns null on corrupted JSON instead of throwing', () => {
     localStorage.setItem('codemap-panel-colors', '{not json');
     expect(getPanelColor('tty:a')).toBeNull();
+  });
+
+  it('stores text colour independently from background colour', () => {
+    setPanelColor('tty:a', '#C83030');
+    setPanelTextColor('tty:a', '#FFFFFF');
+    expect(getPanelColor('tty:a')).toBe('#C83030');
+    expect(getPanelTextColor('tty:a')).toBe('#FFFFFF');
+    // distinct localStorage buckets
+    expect(localStorage.getItem('codemap-panel-text-colors')).toContain('#FFFFFF');
+    expect(localStorage.getItem('codemap-panel-colors')).not.toContain('#FFFFFF');
+  });
+
+  it('clearPanelTextColor removes only the text colour', () => {
+    setPanelColor('tty:a', '#C83030');
+    setPanelTextColor('tty:a', '#FFFFFF');
+    clearPanelTextColor('tty:a');
+    expect(getPanelTextColor('tty:a')).toBeNull();
+    expect(getPanelColor('tty:a')).toBe('#C83030'); // fond intact
   });
 });

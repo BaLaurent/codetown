@@ -1,7 +1,12 @@
 // client/src/components/PanelColorPicker.tsx
-// Pastille dans la barre de titre d'un panneau dockable : ouvre un petit popover
-// de couleurs. Contrôlé (color/onChange) — la persistance vit dans les hosts.
+// Édition de l'apparence d'un panneau dockable : couleur de FOND (accent du cadre/
+// barre/poignée) et couleur de TEXTE de la barre de titre. Contrôlé — la persistance
+// vit dans les hosts. Trois pièces, du plus petit au plus gros :
+//   - PaletteRow       : rangée de pastilles + ✕ « défaut » (présentational).
+//   - PanelAppearance  : sections Fond / Texte (PaletteRow + pastille custom OS).
+//   - PanelColorPicker : pastille de barre de titre qui ouvre PanelAppearance en popover.
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { defaultTextColor } from '../utils/readable-text-color';
 
 // Palette curatée pour des cadres lisibles (distincte des couleurs "shirt" d'agent).
 export const PANEL_PALETTE = [
@@ -42,9 +47,29 @@ const resetBtn: CSSProperties = {
   display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12,
 };
 
-// Rangée de pastilles + ✕ « défaut ». Présentational et contrôlé : partagé entre la
-// popover de la pastille de titre ET les menus contextuels (clic droit) des panneaux.
-// La pastille active est entourée d'un liseré blanc. Sur fond sombre (popover/menu).
+const sectionLabel: CSSProperties = {
+  color: '#e5e7eb', opacity: 0.6, fontSize: 11, margin: '0 0 4px',
+};
+
+const customRow: CSSProperties = {
+  display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, cursor: 'pointer',
+};
+
+const customInput: CSSProperties = {
+  width: 24, height: 18, padding: 0, border: '1px solid rgba(255,255,255,0.4)',
+  borderRadius: 4, background: 'transparent', cursor: 'pointer',
+};
+
+const customHint: CSSProperties = { color: '#e5e7eb', opacity: 0.6, fontSize: 11 };
+
+// <input type="color"> exige #rrggbb : on étend les hex courts (#abc → #aabbcc).
+function hex6(hex: string): string {
+  const h = hex.replace(/^#/, '');
+  return `#${h.length === 3 ? h.split('').map(c => c + c).join('') : h}`;
+}
+
+// Rangée de pastilles + ✕ « défaut ». Présentational et contrôlé : la pastille active
+// est entourée d'un liseré blanc. Pensée pour un fond sombre (popover / menu contextuel).
 export function PaletteRow({ color, onPick }: {
   color: string | null;
   onPick: (color: string | null) => void;
@@ -72,9 +97,55 @@ export function PaletteRow({ color, onPick }: {
   );
 }
 
-export function PanelColorPicker({ color, onChange }: {
-  color: string | null;
-  onChange: (color: string | null) => void;
+// Éditeur d'apparence : deux sections (Fond / Texte), chacune = palette + ✕ défaut +
+// pastille custom (sélecteur natif de l'OS). Le défaut du champ Texte affiche la
+// couleur effective (inverse corrigé du fond) pour ouvrir le sélecteur au bon endroit.
+export function PanelAppearance({ bg, text, onBgChange, onTextChange }: {
+  bg: string | null;
+  text: string | null;
+  onBgChange: (color: string | null) => void;
+  onTextChange: (color: string | null) => void;
+}) {
+  const textDefault = bg ? defaultTextColor(bg) : '#ffffff';
+  return (
+    <div>
+      <div style={sectionLabel}>Fond</div>
+      <PaletteRow color={bg} onPick={onBgChange} />
+      <label style={customRow}>
+        <input
+          type="color"
+          title="Fond personnalisé"
+          aria-label="Fond personnalisé"
+          value={hex6(bg ?? '#888888')}
+          onChange={e => onBgChange(e.target.value)}
+          style={customInput}
+        />
+        <span style={customHint}>perso</span>
+      </label>
+
+      <div style={{ ...sectionLabel, marginTop: 10 }}>Texte</div>
+      <PaletteRow color={text} onPick={onTextChange} />
+      <label style={customRow}>
+        <input
+          type="color"
+          title="Texte personnalisé"
+          aria-label="Texte personnalisé"
+          value={hex6(text ?? textDefault)}
+          onChange={e => onTextChange(e.target.value)}
+          style={customInput}
+        />
+        <span style={customHint}>perso</span>
+      </label>
+    </div>
+  );
+}
+
+// Pastille de barre de titre : montre le fond courant, ouvre PanelAppearance en popover.
+export function PanelColorPicker({ bg, text, onBgChange, onTextChange }: {
+  bg: string | null;
+  text: string | null;
+  onBgChange: (color: string | null) => void;
+  onTextChange: (color: string | null) => void;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -94,21 +165,19 @@ export function PanelColorPicker({ color, onChange }: {
     };
   }, [open]);
 
-  const pick = (c: string | null) => { onChange(c); setOpen(false); };
-
   return (
     <div ref={ref} style={{ position: 'relative', display: 'inline-flex' }}>
       <button
         type="button"
-        title="Couleur du panneau"
-        aria-label="Couleur du panneau"
+        title="Apparence du panneau"
+        aria-label="Apparence du panneau"
         onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
-        // Couleur définie → pastille pleine à contour sombre ; sinon contour gris pointillé.
-        style={{ ...triggerBtn, ...(color ? { background: color, borderStyle: 'solid', borderColor: 'rgba(0,0,0,0.4)' } : null) }}
+        // Fond défini → pastille pleine à contour sombre ; sinon contour gris pointillé.
+        style={{ ...triggerBtn, ...(bg ? { background: bg, borderStyle: 'solid', borderColor: 'rgba(0,0,0,0.4)' } : null) }}
       />
       {open && (
         <div style={popover} onClick={e => e.stopPropagation()}>
-          <PaletteRow color={color} onPick={pick} />
+          <PanelAppearance bg={bg} text={text} onBgChange={onBgChange} onTextChange={onTextChange} />
         </div>
       )}
     </div>

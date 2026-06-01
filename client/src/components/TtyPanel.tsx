@@ -5,8 +5,8 @@ import { WebLinksAddon } from 'xterm-addon-web-links';
 import 'xterm/css/xterm.css';
 import { cwdShort } from '../utils/path-display';
 import { MIN_WIDTH } from './dock-layout';
-import { PanelColorPicker, PaletteRow } from './PanelColorPicker';
-import { readableTextColor } from '../utils/readable-text-color';
+import { PanelColorPicker, PanelAppearance } from './PanelColorPicker';
+import { defaultTextColor } from '../utils/readable-text-color';
 
 const WS_URL = 'ws://localhost:5174';
 
@@ -54,9 +54,11 @@ interface TtyPanelProps {
   onRename: (newTitle: string) => void;
   color: string | null;
   onColorChange: (color: string | null) => void;
+  textColor: string | null;
+  onTextColorChange: (color: string | null) => void;
 }
 
-export function TtyPanel({ ttyId, title, cwd, rightOffset, width, maxWidth, active, isMaximized, onResizeWidth, onClose, onMinimize, onToggleMaximize, onRename, color, onColorChange }: TtyPanelProps) {
+export function TtyPanel({ ttyId, title, cwd, rightOffset, width, maxWidth, active, isMaximized, onResizeWidth, onClose, onMinimize, onToggleMaximize, onRename, color, onColorChange, textColor, onTextColorChange }: TtyPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
@@ -240,7 +242,8 @@ export function TtyPanel({ ttyId, title, cwd, rightOffset, width, maxWidth, acti
   // Look par défaut (#333 / #1a1a1a) tant qu'aucune couleur n'est choisie.
   const borderColor = color ?? '#333';
   const titleBg = color ?? '#1a1a1a';
-  const titleFg = color ? readableTextColor(color) : '#f0f0f0';
+  // Texte : override explicite, sinon inverse corrigé du fond, sinon clair par défaut.
+  const titleFg = textColor ?? (color ? defaultTextColor(color) : '#f0f0f0');
 
   return (
     <div style={{
@@ -297,7 +300,7 @@ export function TtyPanel({ ttyId, title, cwd, rightOffset, width, maxWidth, acti
           {short}
         </span>
         <div style={{ display: 'flex', gap: 2, flexShrink: 0, alignItems: 'center' }}>
-          <PanelColorPicker color={color} onChange={onColorChange} />
+          <PanelColorPicker bg={color} text={textColor} onBgChange={onColorChange} onTextChange={onTextColorChange} />
           <button style={iconBtn} onClick={onToggleMaximize} title={isMaximized ? 'Restaurer' : 'Maximiser'}>{isMaximized ? '🗗' : '🗖'}</button>
           <button style={iconBtn} onClick={onMinimize} title="Réduire">─</button>
           <button style={iconBtn} onClick={onClose} title="Fermer le terminal">✕</button>
@@ -313,9 +316,8 @@ export function TtyPanel({ ttyId, title, cwd, rightOffset, width, maxWidth, acti
             onMouseDown={e => e.preventDefault()}
             onClick={startRename}
           >Renommer</div>
-          <div style={{ ...menuItem, opacity: 0.55, fontSize: 11, cursor: 'default', paddingBottom: 2 }}>Couleur</div>
-          <div style={{ padding: '0 14px 10px' }} onMouseDown={e => e.preventDefault()}>
-            <PaletteRow color={color} onPick={c => { onColorChange(c); setMenu(null); }} />
+          <div style={{ padding: '4px 14px 10px' }}>
+            <PanelAppearance bg={color} text={textColor} onBgChange={onColorChange} onTextChange={onTextColorChange} />
           </div>
         </div>
       )}
