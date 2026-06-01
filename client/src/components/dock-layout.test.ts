@@ -95,3 +95,31 @@ describe('computeDockLayout — politique docké (étirée)', () => {
     expect(placements[1].maxWidth).toBe(placements[1].effectiveWidth); // rightmost: figé (pas de voisin droite)
   });
 });
+
+describe('computeDockLayout — maximize', () => {
+  it('un seul placement pleine largeur quand une clé est maximisée', () => {
+    const { placements, budget } = computeDockLayout(
+      [tty('a'), tty('b'), tty('c')], {}, WIDE, 'docked', 'tty:b',
+    );
+    expect(placements).toHaveLength(1);
+    expect(placements[0].key).toBe('tty:b');
+    expect(placements[0].effectiveWidth).toBe(budget);
+    expect(placements[0].rightOffset).toBe(MARGIN);
+  });
+
+  it('maximize fonctionne aussi en flottant', () => {
+    const { placements, budget } = computeDockLayout(
+      [tty('a'), tty('b')], {}, WIDE, 'floating', 'tty:a',
+    );
+    expect(placements).toHaveLength(1);
+    expect(placements[0].key).toBe('tty:a');
+    expect(placements[0].effectiveWidth).toBe(budget);
+  });
+
+  it('maximizedKey inconnue → ignorée (layout normal)', () => {
+    const { placements } = computeDockLayout(
+      [tty('a'), tty('b')], {}, WIDE, 'floating', 'tty:zzz',
+    );
+    expect(placements).toHaveLength(2);
+  });
+});
