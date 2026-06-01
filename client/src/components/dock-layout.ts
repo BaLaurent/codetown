@@ -37,8 +37,10 @@ function clamp(v: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, v));
 }
 
-// Resize docké : le panneau `key` grandit jusqu'à desired, en prenant UNIQUEMENT
-// ce que son voisin de droite peut céder jusqu'à MIN_WIDTH. Pure → testable.
+// Resize docké : la poignée est sur le bord GAUCHE de chaque panneau. Tirer le
+// séparateur (bord gauche de `key`) ajuste `key` ET son voisin de GAUCHE en conservant
+// la somme de la paire — split-pane BIDIRECTIONNEL (grandit ou rétrécit). Le panneau le
+// plus à gauche n'a pas de voisin gauche → no-op (sa poignée touche la marge). Pure → testable.
 export function redistributeWidth(
   visibleKeysLeftToRight: string[],
   widths: Record<string, number>,
@@ -46,12 +48,13 @@ export function redistributeWidth(
   desiredWidth: number,
 ): Record<string, number> {
   const i = visibleKeysLeftToRight.indexOf(key);
-  if (i < 0 || i === visibleKeysLeftToRight.length - 1) return widths; // pas de voisin droite
-  const rightKey = visibleKeysLeftToRight[i + 1];
+  if (i <= 0) return widths; // absent, ou le plus à gauche : aucun voisin gauche à qui prendre/donner
+  const leftKey = visibleKeysLeftToRight[i - 1];
   const cur = widths[key] ?? 0;
-  const rightCur = widths[rightKey] ?? 0;
-  const grow = Math.max(0, Math.min(desiredWidth - cur, rightCur - MIN_WIDTH));
-  return { ...widths, [key]: cur + grow, [rightKey]: rightCur - grow };
+  const leftCur = widths[leftKey] ?? 0;
+  const total = cur + leftCur;
+  const next = Math.max(MIN_WIDTH, Math.min(desiredWidth, total - MIN_WIDTH)); // les deux ≥ MIN_WIDTH
+  return { ...widths, [key]: next, [leftKey]: total - next };
 }
 
 // Resize docké : on redistribue dans l'espace EFFECTIF (les largeurs rendues, qui
@@ -166,11 +169,11 @@ function layoutDocked(panels: DockPanel[], widths: Record<string, number>, budge
   for (let i = 0; i < n; i++) {
     const w = raw[i];
     const rightOffset = MARGIN + (totalRowWidth - (leftCursor + w));
-    // split-pane : peut prendre ce que le voisin de DROITE peut céder (jusqu'à MIN_WIDTH).
-    // Le plus à droite (rightNeighbor=0) est figé en docké — la redistribution complète
-    // viendra dans DockHost.redistributeWidth (Task 4).
-    const rightNeighbor = i < n - 1 ? raw[i + 1] : 0;
-    const maxWidth = w + Math.max(0, rightNeighbor - MIN_WIDTH);
+    // split-pane : la poignée est sur le bord GAUCHE, donc un panneau grandit en prenant
+    // ce que son voisin de GAUCHE peut céder (jusqu'à MIN_WIDTH). Le plus à gauche
+    // (leftNeighbor=0) est figé — sa poignée touche la marge du viewport.
+    const leftNeighbor = i > 0 ? raw[i - 1] : 0;
+    const maxWidth = w + Math.max(0, leftNeighbor - MIN_WIDTH);
     placements.push({
       key: panelKey(visible[i]), kind: visible[i].kind, id: visible[i].id,
       rightOffset, effectiveWidth: w, maxWidth,
