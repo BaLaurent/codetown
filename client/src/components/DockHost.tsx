@@ -66,6 +66,12 @@ export function DockProvider({ children }: { children: ReactNode }) {
     const key = `${kind}:${id}`;
     setOrder(prev => prev.filter(p => !(p.kind === kind && p.id === id)));
     setMaximizedKey(prev => (prev === key ? null : prev));
+    setWidths(prev => {
+      if (!(key in prev)) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
   }, []);
 
   const maximize = useCallback((key: string) => setMaximizedKey(key), []);

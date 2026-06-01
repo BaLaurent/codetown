@@ -4,7 +4,7 @@ import { FitAddon } from 'xterm-addon-fit';
 import { WebLinksAddon } from 'xterm-addon-web-links';
 import 'xterm/css/xterm.css';
 import { cwdShort } from '../utils/path-display';
-import { MIN_WIDTH } from './tty-layout';
+import { MIN_WIDTH } from './dock-layout';
 
 const WS_URL = 'ws://localhost:5174';
 
@@ -44,13 +44,15 @@ interface TtyPanelProps {
   width: number;       // largeur contrôlée par le parent (état hissé pour empilement multi)
   maxWidth: number;    // budget de largeur dispo à gauche du chat (clamp du drag)
   active: boolean;
+  isMaximized: boolean;
   onResizeWidth: (width: number) => void;
   onClose: () => void;
   onMinimize: () => void;
+  onToggleMaximize: () => void;
   onRename: (newTitle: string) => void;
 }
 
-export function TtyPanel({ ttyId, title, cwd, rightOffset, width, maxWidth, active, onResizeWidth, onClose, onMinimize, onRename }: TtyPanelProps) {
+export function TtyPanel({ ttyId, title, cwd, rightOffset, width, maxWidth, active, isMaximized, onResizeWidth, onClose, onMinimize, onToggleMaximize, onRename }: TtyPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
@@ -285,6 +287,7 @@ export function TtyPanel({ ttyId, title, cwd, rightOffset, width, maxWidth, acti
           {short}
         </span>
         <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
+          <button style={iconBtn} onClick={onToggleMaximize} title={isMaximized ? 'Restaurer' : 'Maximiser'}>{isMaximized ? '🗗' : '🗖'}</button>
           <button style={iconBtn} onClick={onMinimize} title="Réduire">─</button>
           <button style={iconBtn} onClick={onClose} title="Fermer le terminal">✕</button>
         </div>
