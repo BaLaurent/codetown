@@ -31,8 +31,8 @@ npm-debug.log*
 .env.local
 .env.*.local
 
-# Generated hook configs (machine-specific paths)
-.claude/settings.local.json
+# Claude Code local config (machine-specific)
+.claude/
 .cursor/hooks.json
 
 # Playwright screenshots (development)
