@@ -1,10 +1,11 @@
-// Settings entry point: a gear button (placed next to MuteButton in the nav) that
-// opens a pixel-art modal. Audio settings = global volume + per-channel rows
-// (enable/disable + custom clip), grouped into "Activité" (read/write) and
-// "Notification". State lives in sounds.ts; this component is just the UI.
+// Settings entry point: a gear button in the nav that opens a pixel-art modal.
+// Audio settings = global mute + volume + per-channel rows (enable/disable +
+// custom clip), grouped into "Activité" (read/write) and "Notification".
+// State lives in sounds.ts; this component is just the UI.
 import { useRef, useState, type CSSProperties } from 'react';
 import { COLORS } from './InteractionModal';
 import {
+  getMuted, setMuted,
   getVolume, setVolume,
   getSoundEnabled, setSoundEnabled,
   getSoundSource, setSoundSource,
@@ -166,7 +167,13 @@ function SoundRow({ soundKey }: { soundKey: SoundKey }) {
 }
 
 function SettingsModal({ onClose }: { onClose: () => void }) {
+  const [muted, setMutedState] = useState(() => getMuted());
   const [volume, setVolumeState] = useState(() => Math.round(getVolume() * 100));
+
+  const onMute = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setMutedState(e.target.checked);
+    setMuted(e.target.checked);
+  };
 
   const onVolume = (e: React.ChangeEvent<HTMLInputElement>) => {
     const v = Number(e.target.value);
@@ -184,6 +191,12 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
 
         <div style={body}>
           <div style={sectionLabel}>Audio</div>
+          <div style={row}>
+            <label style={{ ...checkLabel, fontSize: 12, fontWeight: 700 }}>
+              <input type="checkbox" checked={muted} onChange={onMute} />
+              Couper le son
+            </label>
+          </div>
           <div style={row}>
             <label style={fieldLabel} htmlFor="settings-volume">Volume — {volume}%</label>
             <input
