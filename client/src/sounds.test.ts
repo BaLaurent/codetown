@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   getVolume, setVolume,
-  getNotificationSound, setNotificationSound,
+  getSoundEnabled, setSoundEnabled,
+  getSoundSource, setSoundSource,
 } from './sounds';
 
 describe('sounds store', () => {
@@ -47,18 +48,27 @@ describe('sounds store', () => {
     });
   });
 
-  describe('notification sound', () => {
-    it('persists a custom data URL', () => {
-      const dataUrl = 'data:audio/wav;base64,AAAA';
-      setNotificationSound(dataUrl);
-      expect(getNotificationSound()).toBe(dataUrl);
-      expect(storage['codemap-notification-sound']).toBe(dataUrl);
+  describe('sound channels', () => {
+    it('toggles a channel and persists the enabled flag', () => {
+      setSoundEnabled('read', false);
+      expect(getSoundEnabled('read')).toBe(false);
+      expect(storage['codemap-sound-read-enabled']).toBe('false');
+      setSoundEnabled('read', true);
+      expect(getSoundEnabled('read')).toBe(true);
     });
 
-    it("falls back to 'default' for an empty value", () => {
-      setNotificationSound('');
-      expect(getNotificationSound()).toBe('default');
-      expect(storage['codemap-notification-sound']).toBe('default');
+    it('keeps channel sources independent', () => {
+      const writeUrl = 'data:audio/wav;base64,WWWW';
+      setSoundSource('write', writeUrl);
+      expect(getSoundSource('write')).toBe(writeUrl);
+      expect(getSoundSource('read')).toBe('default');
+      expect(storage['codemap-sound-write-src']).toBe(writeUrl);
+    });
+
+    it("falls back to 'default' for an empty source", () => {
+      setSoundSource('notification', '');
+      expect(getSoundSource('notification')).toBe('default');
+      expect(storage['codemap-sound-notification-src']).toBe('default');
     });
   });
 });
