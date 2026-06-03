@@ -11,32 +11,6 @@ import { ChatProvider, useChat } from './components/ChatHost';
 import { TtyProvider } from './components/TtyHost';
 import { DockProvider, useDock } from './components/DockHost';
 import { SettingsButton } from './components/SettingsButton';
-import { getMuted, setMuted } from './sounds';
-
-// Mute button component
-function MuteButton() {
-  const [muted, setMutedState] = useState(getMuted());
-
-  const toggle = () => {
-    const newState = !muted;
-    setMuted(newState);
-    setMutedState(newState);
-  };
-
-  return (
-    <button
-      onClick={toggle}
-      style={{
-        ...navLinkStyle,
-        cursor: 'pointer',
-        background: muted ? 'rgba(239, 68, 68, 0.9)' : 'rgba(17, 24, 39, 0.9)',
-      }}
-      title={muted ? 'Unmute sounds' : 'Mute sounds'}
-    >
-      {muted ? 'Muted' : 'Sound'}
-    </button>
-  );
-}
 
 // TreeView - Shows files as a force-directed graph
 function TreeView() {
@@ -68,7 +42,6 @@ function NavLinks() {
     }}>
       <Link to="/" style={navLinkStyle}>Tree</Link>
       <Link to="/hotel" style={navLinkStyle}>Hotel</Link>
-      <MuteButton />
       <SettingsButton navStyle={navLinkStyle} />
     </div>
   );
@@ -162,7 +135,6 @@ function HotelViewInner({ selectedProject, onSelectProject }: {
           style={{ ...navLinkStyle, cursor: 'pointer' }}
           title={mode === 'docked' ? 'Repasser les panneaux en flottant' : 'Docker les panneaux en bas'}
         >⬓ {mode === 'docked' ? 'Float' : 'Dock'}</button>
-        <MuteButton />
         <SettingsButton navStyle={navLinkStyle} />
       </div>
     </>
