@@ -10,6 +10,7 @@ import { AgentStreamProvider } from './hooks/AgentStream';
 import { ChatProvider, useChat } from './components/ChatHost';
 import { TtyProvider } from './components/TtyHost';
 import { DockProvider, useDock } from './components/DockHost';
+import { SettingsButton } from './components/SettingsButton';
 import { getMuted, setMuted } from './sounds';
 
 // Mute button component
@@ -68,6 +69,7 @@ function NavLinks() {
       <Link to="/" style={navLinkStyle}>Tree</Link>
       <Link to="/hotel" style={navLinkStyle}>Hotel</Link>
       <MuteButton />
+      <SettingsButton navStyle={navLinkStyle} />
     </div>
   );
 }
@@ -161,6 +163,7 @@ function HotelViewInner({ selectedProject, onSelectProject }: {
           title={mode === 'docked' ? 'Repasser les panneaux en flottant' : 'Docker les panneaux en bas'}
         >⬓ {mode === 'docked' ? 'Float' : 'Dock'}</button>
         <MuteButton />
+        <SettingsButton navStyle={navLinkStyle} />
       </div>
     </>
   );

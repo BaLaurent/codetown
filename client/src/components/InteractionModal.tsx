@@ -24,7 +24,8 @@ export function formatAnswers(question: AgentQuestion, answers: QuestionAnswer[]
   }).join('\n');
 }
 
-const COLORS = {
+// Pixel-art palette tokens, shared across modals so they stay visually consistent.
+export const COLORS = {
   ink: '#3A2E12',
   border: '#4A3B1A',
   gold: '#FFE040',
