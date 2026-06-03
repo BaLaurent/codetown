@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { SettingsButton } from './SettingsButton';
-import { getVolume, setVolume } from '../sounds';
+import { getVolume, setVolume, getSoundEnabled, SOUND_CHANNELS } from '../sounds';
 
 afterEach(cleanup);
 
@@ -40,6 +40,22 @@ describe('SettingsButton', () => {
     fireEvent.change(slider, { target: { value: '80' } });
     expect(screen.getByText(/Volume — 80%/)).toBeTruthy();
     expect(getVolume()).toBeCloseTo(0.8);
+  });
+
+  it('lists one row per sound channel', () => {
+    render(<SettingsButton navStyle={nav} />);
+    fireEvent.click(screen.getByTitle('Réglages'));
+    expect(screen.getAllByRole('button', { name: 'Tester' }).length).toBe(SOUND_CHANNELS.length);
+    expect(screen.getAllByRole('checkbox').length).toBe(SOUND_CHANNELS.length);
+  });
+
+  it('toggles a channel off via its checkbox', () => {
+    render(<SettingsButton navStyle={nav} />);
+    fireEvent.click(screen.getByTitle('Réglages'));
+    const firstCheckbox = screen.getAllByRole('checkbox')[0]; // 'read' (first channel)
+    expect((firstCheckbox as HTMLInputElement).checked).toBe(true);
+    fireEvent.click(firstCheckbox);
+    expect(getSoundEnabled('read')).toBe(false);
   });
 
   it('rejects a non-audio file with an error message', () => {
