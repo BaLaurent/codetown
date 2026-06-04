@@ -24,6 +24,11 @@ TOOL_INPUT=$(echo "$INPUT" | /usr/bin/jq -r '
   .tool_input as $i
   | ($i.command // $i.file_path // $i.pattern // ($i | tostring)) // ""' 2>/dev/null | head -c 120)
 
+# Full, untruncated plan markdown carried by an ExitPlanMode call, rendered in the
+# hotel modal. Unlike TOOL_INPUT (a 120-char preview) this keeps the whole plan —
+# a truncated JSON blob is exactly the bug this avoids.
+PLAN=$(echo "$INPUT" | /usr/bin/jq -r '.tool_input.plan // empty' 2>/dev/null)
+
 # Defer = let Claude Code's native flow apply. For PermissionRequest that means
 # emitting nothing (the native dialog shows); for PreToolUse, an explicit defer.
 defer() {
@@ -41,8 +46,8 @@ KIND="question"
 [ "$EVENT" = "PermissionRequest" ] && KIND="permission"
 
 # Register the pending request. 204 => no hotel client => defer to the terminal.
-PAYLOAD=$(/usr/bin/jq -nc --arg r "$REQUEST_ID" --arg k "$KIND" --arg tn "$TOOL_NAME" --arg ti "$TOOL_INPUT" \
-    '{requestId:$r, kind:$k, toolName:$tn, toolInput:$ti}')
+PAYLOAD=$(/usr/bin/jq -nc --arg r "$REQUEST_ID" --arg k "$KIND" --arg tn "$TOOL_NAME" --arg ti "$TOOL_INPUT" --arg p "$PLAN" \
+    '{requestId:$r, kind:$k, toolName:$tn, toolInput:$ti} + (if $p == "" then {} else {plan:$p} end)')
 HTTP=$(/usr/bin/curl -s -o /dev/null -w '%{http_code}' --max-time 2 \
     -X POST "$SERVER/api/agent/$AGENT_ID/permission-request" \
     -H "Content-Type: application/json" -d "$PAYLOAD" 2>/dev/null)

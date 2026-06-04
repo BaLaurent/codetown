@@ -22,6 +22,7 @@ import { shouldFlagWaitingForPermission, clearPendingInteraction } from './pendi
 import { spawnAgent, sendMessage as runnerSendMessage, stopAgent, getAgentCapabilities, getProjectCapabilities, setMode as runnerSetMode, setModel as runnerSetModel, setMaxThinkingTokens as runnerSetMaxThinkingTokens, isRunning, shouldExitPlanMode, type PermissionRequest } from './agent-runner/index.js';
 import type { PermissionMode } from '@anthropic-ai/claude-agent-sdk';
 import { resolveEffortOptions, effortToMaxThinkingTokens, isEffortValue } from './effort-options.js';
+import { buildPermissionRequestMessage } from './permission-message.js';
 
 const PORT = 5174; // Fixed port - never change
 
@@ -540,6 +541,10 @@ app.post('/api/agent/:agentId/permission-request', (req, res) => {
   const kind: 'question' | 'permission' = req.body?.kind === 'permission' ? 'permission' : 'question';
   const toolName: string | undefined = req.body?.toolName;
   const toolInput: string | undefined = req.body?.toolInput;
+  // Full plan markdown when the bash hook intercepts an ExitPlanMode call. Mirrors
+  // the SDK in-process path (requestPermission) so both producers of this message
+  // carry the plan and the modal renders it as markdown instead of a truncated blob.
+  const plan: string | undefined = req.body?.plan;
   registerRequest(agentId, requestId);
   // Mark the agent as awaiting input so its bubble flags it immediately.
   const state = agentStates.get(agentId);
@@ -547,7 +552,7 @@ app.post('/api/agent/:agentId/permission-request', (req, res) => {
     state.waitingForInput = true;
     wsManager.broadcast('thinking', getAgentStatesArray());
   }
-  wsManager.broadcast('permission-request', { agentId, requestId, kind, toolName, toolInput });
+  wsManager.broadcast('permission-request', buildPermissionRequestMessage({ agentId, requestId, kind, toolName, toolInput, plan }));
   res.status(200).json({ registered: true });
 });
 
@@ -623,10 +628,10 @@ async function requestPermission(agentId: string, req: PermissionRequest): Promi
   registerRequest(agentId, req.toolUseID);
   const state = agentStates.get(agentId);
   if (state) { state.waitingForInput = true; wsManager.broadcast('thinking', getAgentStatesArray()); }
-  wsManager.broadcast('permission-request', {
+  wsManager.broadcast('permission-request', buildPermissionRequestMessage({
     agentId, requestId: req.toolUseID, kind: 'permission',
     toolName: req.toolName, toolInput: req.toolInput, title: req.title, description: req.description, plan: req.plan,
-  });
+  }));
   const outcome = await awaitDecision(agentId, req.toolUseID, PERMISSION_WAIT_MS);
   // Approving ExitPlanMode leaves plan mode. The CLI already drops the live
   // session to a prompting mode on approval (verified: subsequent writes still
