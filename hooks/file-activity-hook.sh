@@ -5,7 +5,7 @@
 EVENT_TYPE="$1"  # "read-start", "read-end", "write-start", "write-end"
 SERVER_URL="http://localhost:5174/api/activity"
 THINKING_URL="http://localhost:5174/api/thinking"
-LOG_FILE="/tmp/codemap-hook.log"
+LOG_FILE="/tmp/codetown-hook.log"
 
 # Read JSON from stdin
 INPUT=$(cat)
@@ -20,11 +20,11 @@ fi
 
 # Resolve project identity (PROJECT_ID/ROOT/NAME) and ensure the server is up
 HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CODEMAP_ROOT="$(dirname "$HOOK_DIR")"
+CODETOWN_ROOT="$(dirname "$HOOK_DIR")"
 source "$HOOK_DIR/lib/project-id.sh"
 source "$HOOK_DIR/lib/ensure-server.sh"
 resolve_project_identity "$INPUT"
-ensure_codemap_server "$CODEMAP_ROOT"
+ensure_codetown_server "$CODETOWN_ROOT"
 
 # UNIVERSAL: Extract file path - works for both tools
 # Claude: .tool_input.file_path, Cursor: .file_path

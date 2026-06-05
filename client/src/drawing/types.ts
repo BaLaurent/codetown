@@ -1,4 +1,4 @@
-// Drawing types for CodeMap Hotel visualization
+// Drawing types for CodeTown Hotel visualization
 
 import type { AgentQuestion } from '../types';
 

@@ -10,8 +10,8 @@
 // DOM event so the roster panel can re-render. Mirrors the cache+localStorage
 // pattern in sounds.ts.
 
-const STORAGE_KEY = 'codemap-agent-names';
-export const AGENT_NAMES_CHANGED = 'codemap-agent-names-changed';
+const STORAGE_KEY = 'codetown-agent-names';
+export const AGENT_NAMES_CHANGED = 'codetown-agent-names-changed';
 
 function load(): Record<string, string> {
   try {

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Blocking CodeMap hook, used for two events:
+# Blocking CodeTown hook, used for two events:
 #
 #  - PreToolUse / AskUserQuestion : pause the question and let the user answer
 #    from the hotel; the chosen answer is fed back via deny + additionalContext.
@@ -11,7 +11,7 @@
 # terminal) when there's no session id, the server is unreachable, no hotel
 # client is watching (204), or nobody answers in time.
 SERVER="http://localhost:5174"
-LOG_FILE="/tmp/codemap-hook.log"
+LOG_FILE="/tmp/codetown-hook.log"
 
 INPUT=$(cat)
 EVENT=$(echo "$INPUT" | /usr/bin/jq -r '.hook_event_name // empty' 2>/dev/null)
@@ -71,7 +71,7 @@ if [ "$EVENT" = "PermissionRequest" ]; then
             echo '{"hookSpecificOutput":{"hookEventName":"PermissionRequest","decision":{"behavior":"allow"}}}'
             ;;
         deny)
-            REASON=$(echo "$RESP" | /usr/bin/jq -r '.reason // "Refusé via CodeMap"' 2>/dev/null)
+            REASON=$(echo "$RESP" | /usr/bin/jq -r '.reason // "Refusé via CodeTown"' 2>/dev/null)
             /usr/bin/jq -nc --arg m "$REASON" '{hookSpecificOutput:{hookEventName:"PermissionRequest",decision:{behavior:"deny",message:$m}}}'
             ;;
         *)
@@ -88,8 +88,8 @@ else
                 hookSpecificOutput: {
                     hookEventName: "PreToolUse",
                     permissionDecision: "deny",
-                    permissionDecisionReason: ("Réponse fournie via CodeMap:\n" + $t),
-                    additionalContext: ("The user answered via the CodeMap hotel instead of the AskUserQuestion prompt:\n" + $t)
+                    permissionDecisionReason: ("Réponse fournie via CodeTown:\n" + $t),
+                    additionalContext: ("The user answered via the CodeTown hotel instead of the AskUserQuestion prompt:\n" + $t)
                 }
             }'
             ;;
@@ -97,7 +97,7 @@ else
             echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}'
             ;;
         deny)
-            REASON=$(echo "$RESP" | /usr/bin/jq -r '.reason // "Refusé via CodeMap"' 2>/dev/null)
+            REASON=$(echo "$RESP" | /usr/bin/jq -r '.reason // "Refusé via CodeTown"' 2>/dev/null)
             /usr/bin/jq -nc --arg r "$REASON" '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"deny",permissionDecisionReason:$r}}'
             ;;
         *)

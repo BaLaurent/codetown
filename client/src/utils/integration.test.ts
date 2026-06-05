@@ -1,7 +1,7 @@
 /**
  * Mission-Critical Integration Tests
  *
- * These tests verify the core data flow that makes CodeMap Hotel work:
+ * These tests verify the core data flow that makes CodeTown Hotel work:
  * Hook Event → Server → Client → Visualization
  *
  * If any of these tests fail, the visualization is broken.

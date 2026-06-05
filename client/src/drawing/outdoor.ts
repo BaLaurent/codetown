@@ -349,6 +349,6 @@ const drawEntrance = (ctx: CanvasRenderingContext2D, pathCenterX: number, hotelB
   ctx.fillStyle = '#FFD700';
   ctx.font = 'bold 8px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('CODEMAP', entranceX + TILE_SIZE * 2.5, entranceY - 49);
+  ctx.fillText('CODETOWN', entranceX + TILE_SIZE * 2.5, entranceY - 49);
   ctx.textAlign = 'left';
 };

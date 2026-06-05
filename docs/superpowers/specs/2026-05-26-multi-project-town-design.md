@@ -1,4 +1,4 @@
-# CodeMap Town — Multi-Project Support Design
+# CodeTown Town — Multi-Project Support Design
 
 **Date:** 2026-05-26
 **Status:** Approved-by-goal (co-shaped via interactive decisions; see Decisions Locked)
@@ -7,7 +7,7 @@
 ## Goal
 
 Add multi-project support where **each project is its own building**, forming a tiny
-"town" of projects in a single view. Today CodeMap is single-project end-to-end:
+"town" of projects in a single view. Today CodeTown is single-project end-to-end:
 the server boots with a fixed `PROJECT_ROOT`, hooks send absolute paths with no
 project identity, and the client renders one building (the hotel) with all global
 state (`floorsRef`, `filePositionsRef`, `layoutRef`, floor-nav, camera) assuming a
@@ -27,8 +27,8 @@ These were chosen interactively with the user; the rest follows from them.
    project as a building facade; clicking a building enters it and reuses the
    existing interior (floors/rooms/agents) rendering. A "← Town" control exits.
 4. **State persistence (recommendation, locked):** a single **central** state
-   file (`~/.codemap/state.json`), agents tagged with `projectId` — replacing the
-   per-project `.codemap-state.json` written into each user repo today.
+   file (`~/.codetown/state.json`), agents tagged with `projectId` — replacing the
+   per-project `.codetown-state.json` written into each user repo today.
 5. **Delivery (recommendation, locked):** **two phases** — P1 server-side
    multi-project (data layer, shippable on its own), then P2 client-side
    multi-building (the town). P1 keeps a single-building client working against a
@@ -82,7 +82,7 @@ Agent (project C) ─┘                                            │ ProjectR
   - `GET /api/graph` and `GET /api/hot-folders` accept `?projectId=`.
   - WebSocket messages (`activity`, `graph`, `thinking`, `layout-update`) carry
     `projectId`.
-- **State persistence:** single central `~/.codemap/state.json`, agents tagged
+- **State persistence:** single central `~/.codetown/state.json`, agents tagged
   with `projectId`. Removes pollution of user repos.
 - Project lifecycle: a workspace persists while known; the registry tracks
   `lastActivity` so the client can dim idle buildings.
@@ -143,7 +143,7 @@ Agent (project C) ─┘                                            │ ProjectR
 ## Implementation Refinements (discovered during build)
 
 1. **Hooks are installed GLOBALLY** in `~/.claude/settings.json`, not per-project.
-   Per-project setup let different projects point at different CodeMap installs
+   Per-project setup let different projects point at different CodeTown installs
    (e.g. an npx-cached copy with old scripts), so events arrived without
    `projectId` and all agents fell into the server's own building. Global hooks
    give one canonical hook-script source: every project Claude Code runs in

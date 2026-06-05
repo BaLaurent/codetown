@@ -34,7 +34,7 @@ describe('sounds store', () => {
     it('persists the set value and reads it back', () => {
       setVolume(0.42);
       expect(getVolume()).toBeCloseTo(0.42);
-      expect(storage['codemap-audio-volume']).toBe('0.42');
+      expect(storage['codetown-audio-volume']).toBe('0.42');
     });
 
     it('clamps values above 1 down to 1', () => {
@@ -52,7 +52,7 @@ describe('sounds store', () => {
     it('toggles a channel and persists the enabled flag', () => {
       setSoundEnabled('read', false);
       expect(getSoundEnabled('read')).toBe(false);
-      expect(storage['codemap-sound-read-enabled']).toBe('false');
+      expect(storage['codetown-sound-read-enabled']).toBe('false');
       setSoundEnabled('read', true);
       expect(getSoundEnabled('read')).toBe(true);
     });
@@ -62,13 +62,13 @@ describe('sounds store', () => {
       setSoundSource('write', writeUrl);
       expect(getSoundSource('write')).toBe(writeUrl);
       expect(getSoundSource('read')).toBe('default');
-      expect(storage['codemap-sound-write-src']).toBe(writeUrl);
+      expect(storage['codetown-sound-write-src']).toBe(writeUrl);
     });
 
     it("falls back to 'default' for an empty source", () => {
       setSoundSource('notification', '');
       expect(getSoundSource('notification')).toBe('default');
-      expect(storage['codemap-sound-notification-src']).toBe('default');
+      expect(storage['codetown-sound-notification-src']).toBe('default');
     });
   });
 });

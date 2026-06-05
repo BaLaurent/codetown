@@ -11,7 +11,7 @@ export const drawRoomThemedDecorations = (ctx: CanvasRenderingContext2D, room: R
   const name = room.name.toLowerCase();
 
   // ROOT/LOBBY THEME
-  if (room.depth === 0 || name.includes('codemap')) {
+  if (room.depth === 0 || name.includes('codetown')) {
     drawLobbyDecorations(ctx, px, py, w, h, room, frame);
   }
 

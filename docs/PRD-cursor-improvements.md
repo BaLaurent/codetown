@@ -6,7 +6,7 @@
 
 ## Overview
 
-Implement improvements to CodeMap based on Cursor IDE changelog updates and hook capabilities. Focus on Cursor-specific features that expose richer agent state data.
+Implement improvements to CodeTown based on Cursor IDE changelog updates and hook capabilities. Focus on Cursor-specific features that expose richer agent state data.
 
 ## Background
 
@@ -167,7 +167,7 @@ Capture and display MCP tool calls with server name.
 - Fallback when fields missing (Claude Code compatibility)
 
 ### Manual Tests
-- Run Cursor with CodeMap
+- Run Cursor with CodeTown
 - Verify model name appears
 - Complete/abort agent and verify status
 - Run shell commands and verify duration

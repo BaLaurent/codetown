@@ -1,5 +1,5 @@
 // Filesystem layout for user-uploaded chat attachments. One subfolder per agent
-// under /tmp/codemap-attachments so the agent only "sees" its own drops, and
+// under /tmp/codetown-attachments so the agent only "sees" its own drops, and
 // names that collide get a -N suffix instead of clobbering the previous file.
 //
 // Pure functions live here; the route handler in index.ts owns multer and HTTP.
@@ -7,7 +7,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import os from 'node:os';
 
-export const ATTACHMENT_ROOT = path.join(os.tmpdir(), 'codemap-attachments');
+export const ATTACHMENT_ROOT = path.join(os.tmpdir(), 'codetown-attachments');
 
 // Per-agent subfolder. Validated as a UUID upstream, but we still basename()
 // defensively so a malicious id can never escape the root.

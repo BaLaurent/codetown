@@ -44,7 +44,7 @@ setPanelColor(key: string, color: string): void
 clearPanelColor(key: string): void          // retour au défaut
 ```
 
-- Persisté dans `localStorage` sous `codemap-panel-colors` (`Record<string, string>`).
+- Persisté dans `localStorage` sous `codetown-panel-colors` (`Record<string, string>`).
 - Survit au reload ; nettoyé à la fermeture de session (`clearPanelColor` appelé là où
   `clearTtyTitle` l'est déjà, et l'équivalent côté chat).
 - Justification DRY : 2 consommateurs (tty + chat) du **même** savoir + frontière

@@ -30,9 +30,9 @@ export interface ActionRequest extends AgentActionRequest {
   ts: number;
 }
 
-const COLLAPSED_KEY = 'codemap-roster-collapsed';
-const TTY_COLLAPSED_KEY = 'codemap-tty-collapsed';
-const GROUPS_KEY = 'codemap-roster-groups-collapsed';
+const COLLAPSED_KEY = 'codetown-roster-collapsed';
+const TTY_COLLAPSED_KEY = 'codetown-tty-collapsed';
+const GROUPS_KEY = 'codetown-roster-groups-collapsed';
 
 const STATE_META: Record<RosterState, { color: string; label: string }> = {
   working: { color: '#34d399', label: 'Travaille' },

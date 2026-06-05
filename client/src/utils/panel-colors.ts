@@ -1,11 +1,11 @@
 // Couleurs par panneau dockable, clé = panelKey ("tty:<id>" / "chat:<name>") :
-//  - fond  (couleur d'accent du cadre/barre/poignée) → store "codemap-panel-colors"
-//  - texte (couleur du texte de la barre de titre)    → store "codemap-panel-text-colors"
+//  - fond  (couleur d'accent du cadre/barre/poignée) → store "codetown-panel-colors"
+//  - texte (couleur du texte de la barre de titre)    → store "codetown-panel-text-colors"
 // Calqué sur tty-titles.ts : persiste en localStorage, survit au reload, nettoyé à la
 // fermeture de session. Défaut = null → look par défaut (texte = inverse du fond).
 
-const BG_KEY = 'codemap-panel-colors';
-const TEXT_KEY = 'codemap-panel-text-colors';
+const BG_KEY = 'codetown-panel-colors';
+const TEXT_KEY = 'codetown-panel-text-colors';
 
 function load(storageKey: string): Record<string, string> {
   try {

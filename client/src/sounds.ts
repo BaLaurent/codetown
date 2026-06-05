@@ -1,4 +1,4 @@
-// Sound effects for CodeMap Hotel using Web Audio API.
+// Sound effects for CodeTown Hotel using Web Audio API.
 // Sounds are organized as configurable "channels" (read, write, notification):
 // each can be toggled on/off and given a custom uploaded clip, on top of the
 // global mute + volume. Synthesized defaults route through a single master gain.
@@ -26,24 +26,24 @@ const writeStored = (key: string, value: string): void => {
 
 const clamp01 = (v: number): number => (Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 1);
 
-let isMuted = readStored('codemap-muted') === 'true';
+let isMuted = readStored('codetown-muted') === 'true';
 
 // Master volume (0..1), applied to every sound. Single source of truth: synthesized
 // sounds route through masterGain, custom clips read getVolume().
-let volume = clamp01(parseFloat(readStored('codemap-audio-volume') ?? '1'));
+let volume = clamp01(parseFloat(readStored('codetown-audio-volume') ?? '1'));
 
 export const getMuted = () => isMuted;
 
 export const setMuted = (muted: boolean) => {
   isMuted = muted;
-  writeStored('codemap-muted', muted ? 'true' : 'false');
+  writeStored('codetown-muted', muted ? 'true' : 'false');
 };
 
 export const getVolume = () => volume;
 
 export const setVolume = (v: number) => {
   volume = clamp01(v);
-  writeStored('codemap-audio-volume', String(volume));
+  writeStored('codetown-audio-volume', String(volume));
   if (masterGain) masterGain.gain.value = volume;
 };
 
@@ -170,8 +170,8 @@ interface ChannelState {
   lastPlayed: number;
 }
 
-const enabledStoreKey = (key: SoundKey) => `codemap-sound-${key}-enabled`;
-const sourceStoreKey = (key: SoundKey) => `codemap-sound-${key}-src`;
+const enabledStoreKey = (key: SoundKey) => `codetown-sound-${key}-enabled`;
+const sourceStoreKey = (key: SoundKey) => `codetown-sound-${key}-src`;
 
 const makeState = (key: SoundKey): ChannelState => ({
   enabled: readStored(enabledStoreKey(key)) !== 'false', // default: enabled

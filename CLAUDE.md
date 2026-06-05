@@ -1,4 +1,4 @@
-# CodeMap Hotel
+# CodeTown Hotel
 
 Real-time pixel-art visualization of Claude Code and Cursor agents. Shows agents as characters moving around a hotel, working at desks that represent files.
 
@@ -23,7 +23,7 @@ Run tests: `cd server && npm test` and `cd client && npm test`
 | Client | `http://localhost:5173/hotel` |
 | Start both | `npm run dev` |
 | Run tests | `npm test` (from client/ or server/) |
-| Hook logs | `tail -f /tmp/codemap-hook.log` |
+| Hook logs | `tail -f /tmp/codetown-hook.log` |
 
 ## Architecture Overview
 
@@ -55,7 +55,7 @@ Run tests: `cd server && npm test` and `cd client && npm test`
 ## Directory Structure
 
 ```
-codemap/
+codetown/
 ├── bin/
 │   └── setup.js           # Universal setup script for any project
 ├── hooks/
@@ -293,7 +293,7 @@ Movement logic is in `client/src/utils/agent-movement.ts`:
 
 ```bash
 # Watch hook logs in real-time
-tail -f /tmp/codemap-hook.log
+tail -f /tmp/codetown-hook.log
 
 # Test activity endpoint manually
 curl -X POST http://localhost:5174/api/activity \
@@ -321,7 +321,7 @@ curl http://localhost:5174/api/debug | jq
 
 ```bash
 # From any project directory
-node /path/to/codemap/bin/setup.js
+node /path/to/codetown/bin/setup.js
 
 # This will:
 # 1. Configure .claude/settings.local.json with hooks

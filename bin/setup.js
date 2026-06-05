@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * CodeMap Hotel Setup Script
+ * CodeTown Hotel Setup Script
  *
  * Universal setup for BOTH Claude Code AND Cursor.
  * Configures hooks for whichever tool(s) are present.
- * Run this in your project root: npx codemap-hotel setup
+ * Run this in your project root: npx codetown-hotel setup
  */
 
 import fs from 'fs';
@@ -14,17 +14,17 @@ import { fileURLToPath } from 'url';
 import { spawn, exec } from 'child_process';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CODEMAP_ROOT = path.resolve(__dirname, '..');
+const CODETOWN_ROOT = path.resolve(__dirname, '..');
 const TARGET_DIR = process.cwd();
 const SERVER_PORT = 5174;
 const CLIENT_PORT = 5173;
 
 // Hook paths (absolute - works for both tools)
-const FILE_HOOK = path.join(CODEMAP_ROOT, 'hooks', 'file-activity-hook.sh');
-const THINKING_HOOK = path.join(CODEMAP_ROOT, 'hooks', 'thinking-hook.sh');
-const PERMISSION_HOOK = path.join(CODEMAP_ROOT, 'hooks', 'permission-hook.sh');
-const SESSION_HOOK = path.join(CODEMAP_ROOT, 'hooks', 'session-start-hook.sh');
-const GIT_POST_COMMIT_HOOK = path.join(CODEMAP_ROOT, 'hooks', 'git-post-commit.sh');
+const FILE_HOOK = path.join(CODETOWN_ROOT, 'hooks', 'file-activity-hook.sh');
+const THINKING_HOOK = path.join(CODETOWN_ROOT, 'hooks', 'thinking-hook.sh');
+const PERMISSION_HOOK = path.join(CODETOWN_ROOT, 'hooks', 'permission-hook.sh');
+const SESSION_HOOK = path.join(CODETOWN_ROOT, 'hooks', 'session-start-hook.sh');
+const GIT_POST_COMMIT_HOOK = path.join(CODETOWN_ROOT, 'hooks', 'git-post-commit.sh');
 
 // Claude settings to merge
 const hooksConfig = {
@@ -109,14 +109,14 @@ const permissionsConfig = {
 // Cursor hooks configuration (.cursor/hooks.json) is generated from the
 // versioned template (.cursor/hooks.json.template), the single source of truth
 // for the hook structure. The generated file holds machine-specific absolute
-// paths so it is git-ignored. We substitute __CODEMAP_ROOT__ inside the parsed
+// paths so it is git-ignored. We substitute __CODETOWN_ROOT__ inside the parsed
 // object (not the raw text) so JSON.stringify on write escapes path separators
 // correctly, including Windows backslashes.
-const cursorTemplatePath = path.join(CODEMAP_ROOT, '.cursor', 'hooks.json.template');
+const cursorTemplatePath = path.join(CODETOWN_ROOT, '.cursor', 'hooks.json.template');
 const cursorHooksConfig = JSON.parse(fs.readFileSync(cursorTemplatePath, 'utf8'));
 for (const eventHooks of Object.values(cursorHooksConfig.hooks)) {
   for (const entry of eventHooks) {
-    entry.command = entry.command.split('__CODEMAP_ROOT__').join(CODEMAP_ROOT);
+    entry.command = entry.command.split('__CODETOWN_ROOT__').join(CODETOWN_ROOT);
   }
 }
 
@@ -139,10 +139,10 @@ function openBrowser(url) {
 // Start the dev server
 function startServer() {
   return new Promise((resolve, reject) => {
-    console.log('🚀 Starting CodeMap server...\n');
+    console.log('🚀 Starting CodeTown server...\n');
 
     const child = spawn('npm', ['run', 'dev'], {
-      cwd: CODEMAP_ROOT,
+      cwd: CODETOWN_ROOT,
       stdio: 'inherit',
       shell: true,
       env: { ...process.env, PROJECT_ROOT: TARGET_DIR }
@@ -157,7 +157,7 @@ function startServer() {
 
 // Main "run" command - does everything automatically
 async function run() {
-  console.log('🏨 CodeMap Hotel\n');
+  console.log('🏨 CodeTown Hotel\n');
   console.log(`Project: ${TARGET_DIR}\n`);
 
   // Step 1: Setup hooks if not already configured (global config now)
@@ -196,8 +196,8 @@ async function run() {
   console.log('Start Claude Code or Cursor in your project to see agents! 🎮\n');
 }
 
-// True if a hook entry belongs to CodeMap (so we can replace it idempotently).
-function isCodemapHook(entry) {
+// True if a hook entry belongs to CodeTown (so we can replace it idempotently).
+function isCodetownHook(entry) {
   const s = JSON.stringify(entry);
   return s.includes('file-activity-hook') || s.includes('thinking-hook') || s.includes('permission-hook') || s.includes('session-start-hook');
 }
@@ -205,7 +205,7 @@ function isCodemapHook(entry) {
 // Setup Claude Code hooks GLOBALLY (~/.claude/settings.json).
 // Global hooks mean every project Claude Code runs in automatically appears as a
 // building in the town — one canonical hook-script source, no per-project drift.
-// Merges additively: existing (non-CodeMap) hooks and permissions are preserved.
+// Merges additively: existing (non-CodeTown) hooks and permissions are preserved.
 function setupClaudeHooks() {
   const claudeDir = path.join(os.homedir(), '.claude');
   if (!fs.existsSync(claudeDir)) {
@@ -217,18 +217,18 @@ function setupClaudeHooks() {
   if (fs.existsSync(settingsPath)) {
     try {
       // Back up before touching the user's global config.
-      fs.copyFileSync(settingsPath, settingsPath + '.codemap-bak');
+      fs.copyFileSync(settingsPath, settingsPath + '.codetown-bak');
       settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
     } catch (e) {
       // Ignore parse errors, start fresh
     }
   }
 
-  // Append CodeMap hook entries to each event array, dropping any prior CodeMap
+  // Append CodeTown hook entries to each event array, dropping any prior CodeTown
   // entries first so re-running setup is idempotent and never duplicates.
   settings.hooks = settings.hooks || {};
   for (const [event, entries] of Object.entries(hooksConfig.hooks)) {
-    const kept = (settings.hooks[event] || []).filter(e => !isCodemapHook(e));
+    const kept = (settings.hooks[event] || []).filter(e => !isCodetownHook(e));
     settings.hooks[event] = [...kept, ...entries];
   }
 
@@ -275,21 +275,21 @@ function setupGitHook() {
   if (fs.existsSync(postCommitPath)) {
     const existing = fs.readFileSync(postCommitPath, 'utf8');
     // Check if our hook is already integrated
-    if (existing.includes('codemap') || existing.includes('git-post-commit.sh')) {
+    if (existing.includes('codetown') || existing.includes('git-post-commit.sh')) {
       console.log('✓ Git post-commit hook already configured');
       return;
     }
     // Append to existing hook
-    const updated = existing + `\n\n# CodeMap Hotel - refresh layout on commit\n${GIT_POST_COMMIT_HOOK}\n`;
+    const updated = existing + `\n\n# CodeTown Hotel - refresh layout on commit\n${GIT_POST_COMMIT_HOOK}\n`;
     fs.writeFileSync(postCommitPath, updated);
-    console.log('✓ Added CodeMap to existing git post-commit hook');
+    console.log('✓ Added CodeTown to existing git post-commit hook');
   } else {
     // Create new hook
     const hookContent = `#!/bin/bash
 # Git post-commit hook
-# Auto-generated by CodeMap Hotel setup
+# Auto-generated by CodeTown Hotel setup
 
-# CodeMap Hotel - refresh layout on commit
+# CodeTown Hotel - refresh layout on commit
 ${GIT_POST_COMMIT_HOOK}
 `;
     fs.writeFileSync(postCommitPath, hookContent);
@@ -322,15 +322,15 @@ function setupHooks() {
 }
 
 function setup() {
-  console.log('🏨 CodeMap Hotel Setup\n');
-  console.log(`CodeMap installed at: ${CODEMAP_ROOT}`);
+  console.log('🏨 CodeTown Hotel Setup\n');
+  console.log(`CodeTown installed at: ${CODETOWN_ROOT}`);
   console.log(`Target project: ${TARGET_DIR}\n`);
 
   setupHooks();
 
   console.log('\nSetup complete! To start visualization:\n');
   console.log(`  cd ${TARGET_DIR}`);
-  console.log('  codemap-hotel\n');
+  console.log('  codetown-hotel\n');
 }
 
 // CLI
@@ -345,9 +345,9 @@ if (command === 'setup') {
   // Default: run everything
   run();
 } else {
-  console.log('CodeMap Hotel - Visualize Claude Code agents\n');
+  console.log('CodeTown Hotel - Visualize Claude Code agents\n');
   console.log('Usage:');
-  console.log('  codemap-hotel         - Setup hooks, start server, open browser');
-  console.log('  codemap-hotel setup   - Only configure hooks for current project');
+  console.log('  codetown-hotel         - Setup hooks, start server, open browser');
+  console.log('  codetown-hotel setup   - Only configure hooks for current project');
   console.log('');
 }

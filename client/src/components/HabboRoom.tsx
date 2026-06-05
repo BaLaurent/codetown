@@ -1591,7 +1591,7 @@ export function HabboRoom({ projectId, focusRequest, actionRequest }: { projectI
         borderRadius: '6px',
         border: '1px solid rgba(160, 150, 140, 0.3)'
       }}>
-        CodeMap
+        CodeTown
       </div>
       <FloorNavBar
         currentFloor={nav.state.currentFloorIndex}
@@ -1635,7 +1635,7 @@ export function HabboRoom({ projectId, focusRequest, actionRequest }: { projectI
           onDecide={(allow: boolean, feedback?: string) => {
             if (modalTarget.requestId) {
               postOutcome(modalTarget.agentId, modalTarget.requestId,
-                allow ? { outcome: 'allow' } : { outcome: 'deny', reason: feedback ?? 'Refusé via CodeMap' });
+                allow ? { outcome: 'allow' } : { outcome: 'deny', reason: feedback ?? 'Refusé via CodeTown' });
             }
             setModalTarget(null);
           }}

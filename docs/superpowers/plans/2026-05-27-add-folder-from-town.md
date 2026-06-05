@@ -4,7 +4,7 @@
 
 **Goal:** Let the user raise a persistent, empty building for any folder from the town view, enter it, spawn agents in it, and remove it (killing live agents on confirmation).
 
-**Architecture:** Server-authoritative. A folder is pinned via `POST /api/projects`, which derives its identity (`deriveProjectFromDir`), creates a registry workspace, marks it `pinned`, and persists it to `~/.codemap/state.json` (restored at boot). A server endpoint (`GET /api/fs/list`) feeds a pixel-art `FolderBrowser` modal. The town gets a "+" affordance and a ✕ badge on pinned buildings; removal with live agents opens a kill-confirm modal. The client picks up new/removed buildings via the existing `useProjects` poll.
+**Architecture:** Server-authoritative. A folder is pinned via `POST /api/projects`, which derives its identity (`deriveProjectFromDir`), creates a registry workspace, marks it `pinned`, and persists it to `~/.codetown/state.json` (restored at boot). A server endpoint (`GET /api/fs/list`) feeds a pixel-art `FolderBrowser` modal. The town gets a "+" affordance and a ✕ badge on pinned buildings; removal with live agents opens a kill-confirm modal. The client picks up new/removed buildings via the existing `useProjects` poll.
 
 **Tech Stack:** Node + Express + WebSocket (server, TS, ESM with `.js` import specifiers), React + Canvas (client, TS), Vitest both sides.
 
@@ -552,7 +552,7 @@ Expected: PASS, no type errors.
 cd server && npm run dev &   # or rely on the auto-start
 sleep 2
 curl -s -X POST localhost:5174/api/projects -H 'Content-Type: application/json' -d "{\"path\":\"$PWD\"}" | jq .isPinned
-grep -c pinnedProjects ~/.codemap/state.json
+grep -c pinnedProjects ~/.codetown/state.json
 ```
 Expected: `true`, and `state.json` contains a `pinnedProjects` entry.
 

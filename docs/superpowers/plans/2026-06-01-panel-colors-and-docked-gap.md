@@ -73,11 +73,11 @@ describe('panel-colors', () => {
 
   it('survives via localStorage (new read sees the persisted value)', () => {
     setPanelColor('tty:a', '#2E9E4F');
-    expect(JSON.parse(localStorage.getItem('codemap-panel-colors')!)['tty:a']).toBe('#2E9E4F');
+    expect(JSON.parse(localStorage.getItem('codetown-panel-colors')!)['tty:a']).toBe('#2E9E4F');
   });
 
   it('returns null on corrupted JSON instead of throwing', () => {
-    localStorage.setItem('codemap-panel-colors', '{not json');
+    localStorage.setItem('codetown-panel-colors', '{not json');
     expect(getPanelColor('tty:a')).toBeNull();
   });
 });
@@ -96,7 +96,7 @@ Expected: FAIL — `Failed to resolve import "./panel-colors"`.
 // Calqué sur tty-titles.ts : persiste en localStorage, survit au reload, nettoyé à la
 // fermeture de session. Défaut = null → le panneau garde son look par défaut.
 
-const STORAGE_KEY = 'codemap-panel-colors';
+const STORAGE_KEY = 'codetown-panel-colors';
 
 function load(): Record<string, string> {
   try {

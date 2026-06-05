@@ -2,7 +2,7 @@
 // Persists across reloads; lost when the session is killed (ttyId changes).
 // No hot-path reads (unlike agent-names), so no in-memory cache needed.
 
-const STORAGE_KEY = 'codemap-tty-titles';
+const STORAGE_KEY = 'codetown-tty-titles';
 
 function load(): Record<string, string> {
   try {

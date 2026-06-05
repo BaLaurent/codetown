@@ -1,4 +1,4 @@
-# CodeMap Town — Add Folder From Town Design
+# CodeTown Town — Add Folder From Town Design
 
 **Date:** 2026-05-27
 **Status:** Approved (co-shaped via brainstorming; see Decisions Locked)
@@ -37,13 +37,13 @@ Chosen interactively with the user; the rest follows from them.
 5. **Dotfiles:** *hidden in the browser*. We are picking a project directory, so
    hidden directories are noise; they are filtered out.
 6. **Ownership of the project list:** *server-authoritative*. The server owns the
-   pinned-project list, persists it to the existing `~/.codemap/state.json`, and
+   pinned-project list, persists it to the existing `~/.codetown/state.json`, and
    restores it at boot. (Not client `localStorage`.)
 
 ## Approach
 
 **Server-authoritative (chosen).** The server owns pinned projects, persists them
-in `~/.codemap/state.json` (the file already exists for agent state), and restores
+in `~/.codetown/state.json` (the file already exists for agent state), and restores
 them at boot via `registry.getOrCreate`. The directory browser is a server
 endpoint. Single source of truth: `graph`, `hot-folders`, and `spawn` already
 resolve everything off `projectId`/`projectRoot` held by the registry, so a pinned
@@ -103,7 +103,7 @@ Returns the immediate **sub-directories** of `path`, for the browser to descend.
 - Response: `{ path, parent, entries: [{ name, path }] }` where `parent` is
   `path.dirname(path)` or `null` at filesystem root. Entries sorted by name.
 
-This endpoint exposes directory names under the user's home tree. CodeMap is a
+This endpoint exposes directory names under the user's home tree. CodeTown is a
 localhost-only dev tool (hardcoded `localhost:5174`); this is acceptable, matching
 the existing posture of the server.
 

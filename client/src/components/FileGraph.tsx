@@ -458,7 +458,7 @@ export function FileGraph() {
         fontSize: '18px',
         fontWeight: 600
       }}>
-        CodeMap
+        CodeTown
       </div>
 
       <canvas

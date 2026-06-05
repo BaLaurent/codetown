@@ -460,7 +460,7 @@ import {
   type DockPanel, type DockPlacement, type LayoutMode, type PanelKind,
 } from './dock-layout';
 
-const MODE_KEY = 'codemap:dock-mode';
+const MODE_KEY = 'codetown:dock-mode';
 
 // Resize docké : le panneau `key` grandit jusqu'à desired, en prenant UNIQUEMENT
 // ce que son voisin de droite peut céder jusqu'à MIN_WIDTH. Pure → testable.

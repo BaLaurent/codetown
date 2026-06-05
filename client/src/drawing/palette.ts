@@ -1,4 +1,4 @@
-// Color palettes for CodeMap Hotel visualization
+// Color palettes for CodeTown Hotel visualization
 import { CharacterPalette } from './types';
 
 // RPG-STYLE PALETTE - SATURATED warm colors like Pokemon

@@ -9,7 +9,7 @@ import {
   type DockPanel, type DockPlacement, type LayoutMode, type PanelKind,
 } from './dock-layout';
 
-const MODE_KEY = 'codemap:dock-mode';
+const MODE_KEY = 'codetown:dock-mode';
 
 interface DockControl {
   mode: LayoutMode;

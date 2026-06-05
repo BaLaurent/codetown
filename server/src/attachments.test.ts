@@ -5,7 +5,7 @@ import os from 'node:os';
 import { attachmentDir, sanitizeFilename, reserveAttachmentPath, ATTACHMENT_ROOT } from './attachments.js';
 
 describe('attachmentDir', () => {
-  it('namespaces by agent id under /tmp/codemap-attachments', () => {
+  it('namespaces by agent id under /tmp/codetown-attachments', () => {
     expect(attachmentDir('abc')).toBe(path.join(ATTACHMENT_ROOT, 'abc'));
   });
 
@@ -39,7 +39,7 @@ describe('sanitizeFilename', () => {
 describe('reserveAttachmentPath', () => {
   let dir: string;
   beforeEach(() => {
-    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'codemap-attach-test-'));
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'codetown-attach-test-'));
   });
   afterEach(() => {
     fs.rmSync(dir, { recursive: true, force: true });

@@ -121,7 +121,7 @@ export function shouldExitPlanMode(toolName: string, outcome: InteractionOutcome
 // echoes the original input unchanged; deny/timeout become a denial with a reason.
 export function outcomeToPermissionResult(outcome: InteractionOutcome, input: Record<string, unknown>): PermissionResult {
   if (outcome.outcome === 'allow') return { behavior: 'allow', updatedInput: input };
-  const reason = outcome.outcome === 'deny' ? (outcome.reason ?? 'Refusé via CodeMap') : 'Aucune réponse';
+  const reason = outcome.outcome === 'deny' ? (outcome.reason ?? 'Refusé via CodeTown') : 'Aucune réponse';
   return { behavior: 'deny', message: reason };
 }
 

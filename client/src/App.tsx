@@ -1,4 +1,4 @@
-// Main App component - CodeMap visualization application
+// Main App component - CodeTown visualization application
 // Provides two views: Tree (force graph) and Hotel (isometric room)
 import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';

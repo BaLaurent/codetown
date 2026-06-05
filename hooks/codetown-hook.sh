@@ -1,11 +1,11 @@
 #!/bin/bash
-# CodeMap Unified Hook
+# CodeTown Unified Hook
 # Works with Claude Code, Cursor, and other compatible tools
 # Handles both file activity and thinking state events
 
 EVENT_TYPE="$1"  # read-start, read-end, write-start, write-end, thinking-start, thinking-end
 SERVER_BASE="http://localhost:5174/api"
-LOG_FILE="/tmp/codemap-hook.log"
+LOG_FILE="/tmp/codetown-hook.log"
 
 # Read JSON from stdin
 INPUT=$(cat)

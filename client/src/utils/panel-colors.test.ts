@@ -51,11 +51,11 @@ describe('panel-colors', () => {
 
   it('survives via localStorage (new read sees the persisted value)', () => {
     setPanelColor('tty:a', '#2E9E4F');
-    expect(JSON.parse(localStorage.getItem('codemap-panel-colors')!)['tty:a']).toBe('#2E9E4F');
+    expect(JSON.parse(localStorage.getItem('codetown-panel-colors')!)['tty:a']).toBe('#2E9E4F');
   });
 
   it('returns null on corrupted JSON instead of throwing', () => {
-    localStorage.setItem('codemap-panel-colors', '{not json');
+    localStorage.setItem('codetown-panel-colors', '{not json');
     expect(getPanelColor('tty:a')).toBeNull();
   });
 
@@ -65,8 +65,8 @@ describe('panel-colors', () => {
     expect(getPanelColor('tty:a')).toBe('#C83030');
     expect(getPanelTextColor('tty:a')).toBe('#FFFFFF');
     // distinct localStorage buckets
-    expect(localStorage.getItem('codemap-panel-text-colors')).toContain('#FFFFFF');
-    expect(localStorage.getItem('codemap-panel-colors')).not.toContain('#FFFFFF');
+    expect(localStorage.getItem('codetown-panel-text-colors')).toContain('#FFFFFF');
+    expect(localStorage.getItem('codetown-panel-colors')).not.toContain('#FFFFFF');
   });
 
   it('clearPanelTextColor removes only the text colour', () => {

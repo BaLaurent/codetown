@@ -13,7 +13,7 @@ describe('deriveProjectFromPath', () => {
   });
 
   it('derives the git root from an absolute file path (foreign/old-hook events)', () => {
-    const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'codemap-git-'));
+    const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'codetown-git-'));
     dirs.push(repo);
     execFileSync('git', ['-C', repo, 'init', '-q']);
     const sub = path.join(repo, 'src');

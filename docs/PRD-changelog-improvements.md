@@ -6,11 +6,11 @@
 
 ## Overview
 
-Implement improvements to CodeMap based on Claude Code changelog updates from the past 3 weeks (v2.1.0 - v2.1.7). Focus on features that expose more agent state data and improve visualization accuracy.
+Implement improvements to CodeTown based on Claude Code changelog updates from the past 3 weeks (v2.1.0 - v2.1.7). Focus on features that expose more agent state data and improve visualization accuracy.
 
 ## Background
 
-Claude Code v2.1.x introduced several features relevant to CodeMap:
+Claude Code v2.1.x introduced several features relevant to CodeTown:
 
 | Version | Feature | Relevance |
 |---------|---------|-----------|
@@ -68,7 +68,7 @@ Add a visual indicator above each agent showing context window usage.
 ## Feature 2: Background Task State
 
 ### Problem
-When a user presses Ctrl+B to background an agent, CodeMap doesn't reflect this state.
+When a user presses Ctrl+B to background an agent, CodeTown doesn't reflect this state.
 
 ### Solution
 Add visual indicator for backgrounded agents.
@@ -168,7 +168,7 @@ Show abbreviated file path or command in the bubble.
 - Fallback behavior when fields missing
 
 ### Manual Tests
-- Start Claude Code with CodeMap running
+- Start Claude Code with CodeTown running
 - Verify new indicators appear
 - Background an agent and verify state change
 - Use different agent types and verify labels

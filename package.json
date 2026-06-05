@@ -1,10 +1,10 @@
 {
-  "name": "codemap-hotel",
+  "name": "codetown-hotel",
   "version": "1.0.0",
-  "description": "Visualize Claude Code agents as characters in a pixel-art hotel room",
+  "description": "Visualize Claude Code & Cursor agents as characters in a pixel-art hotel — with live terminals, agent chat, multi-project town and more",
   "type": "module",
   "bin": {
-    "codemap-hotel": "./bin/setup.js"
+    "codetown-hotel": "./bin/setup.js"
   },
   "workspaces": ["server", "client"],
   "scripts": {
@@ -20,7 +20,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/JamsusMaximus/codemap"
+    "url": "https://github.com/BaLaurent/codetown"
   },
   "devDependencies": {
     "concurrently": "^8.2.0"

@@ -114,7 +114,7 @@ Structure identique à `AgentChatPanel` :
 
 ```
 ┌─────────────────────────────────────┐
-│ 💻 TTY 1  /codemap           [✕]    │  ← barre titre
+│ 💻 TTY 1  /codetown           [✕]    │  ← barre titre
 ├─────────────────────────────────────┤
 │                                     │
 │   xterm.js Terminal (FitAddon)      │  ← corps (flex:1)

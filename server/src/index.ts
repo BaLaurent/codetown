@@ -141,7 +141,7 @@ const recentActivityBuffer: Array<{ type: string; filePath: string; agentId?: st
 const MAX_ACTIVITY_BUFFER = 50;
 
 // Agent state persistence — central, not per-project (agents carry their projectId)
-const STATE_DIR = path.join(os.homedir(), '.codemap');
+const STATE_DIR = path.join(os.homedir(), '.codetown');
 const STATE_FILE = path.join(STATE_DIR, 'state.json');
 
 function saveAgentState(): void {
@@ -749,7 +749,7 @@ app.get('/api/agent/:agentId/capabilities', async (req, res) => {
 });
 
 // User-uploaded attachments from the hotel chat. Files land in
-// /tmp/codemap-attachments/<agentId>/ and the client mentions the absolute
+// /tmp/codetown-attachments/<agentId>/ and the client mentions the absolute
 // path in the next message so the agent reads them via its normal file tools.
 // Cap: 10 files per request, 25 MB each — big enough for screenshots/CSVs,
 // small enough that we can keep them in memory before writing.
@@ -1271,7 +1271,7 @@ loadAgentState();
 
 server.listen(PORT, () => {
   console.log(`
-  CodeMap Server
+  CodeTown Server
   ==============
   HTTP:      http://localhost:${PORT}
   WebSocket: ws://localhost:${PORT}/ws

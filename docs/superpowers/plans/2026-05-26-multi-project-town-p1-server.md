@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make the CodeMap server discover and track multiple projects (one "building" each), with hooks carrying project identity and auto-starting the server.
+**Goal:** Make the CodeTown server discover and track multiple projects (one "building" each), with hooks carrying project identity and auto-starting the server.
 
-**Architecture:** A single aggregating server keyed by `projectId` (git root). A new `ProjectRegistry` maps `projectId → ProjectWorkspace`, each owning its own `ActivityStore` + git cache (both already project-parameterized). Hooks compute `projectId` from `cwd` and tag every event; they also auto-start the server via a `flock`-guarded helper. WebSocket messages and HTTP endpoints become project-aware. Agent state persists centrally in `~/.codemap/state.json`.
+**Architecture:** A single aggregating server keyed by `projectId` (git root). A new `ProjectRegistry` maps `projectId → ProjectWorkspace`, each owning its own `ActivityStore` + git cache (both already project-parameterized). Hooks compute `projectId` from `cwd` and tag every event; they also auto-start the server via a `flock`-guarded helper. WebSocket messages and HTTP endpoints become project-aware. Agent state persists centrally in `~/.codetown/state.json`.
 
 **Tech Stack:** Node + TypeScript (ESM), Express, `ws`, Vitest. Bash hooks with `jq`/`curl`/`flock`.
 
@@ -100,7 +100,7 @@ import path from 'path';
 import { ProjectRegistry } from './project-registry.js';
 
 function makeProjectDir(): string {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'codemap-proj-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'codetown-proj-'));
   fs.writeFileSync(path.join(dir, 'a.txt'), 'hello');
   return dir;
 }
@@ -291,14 +291,14 @@ Create `hooks/lib/ensure-server.sh`:
 
 ```bash
 #!/bin/bash
-# Ensures the CodeMap server is running on :5174.
+# Ensures the CodeTown server is running on :5174.
 # If not, launches `npm run dev` detached, guarded by flock so only one
 # hook wins the cold-start race. Best-effort: never blocks the agent.
 
-ensure_codemap_server() {
-  local codemap_root="$1"   # absolute path to the codemap repo (contains package.json)
+ensure_codetown_server() {
+  local codetown_root="$1"   # absolute path to the codetown repo (contains package.json)
   local health="http://localhost:5174/api/health"
-  local lock="/tmp/codemap-server.lock"
+  local lock="/tmp/codetown-server.lock"
 
   if /usr/bin/curl -s --connect-timeout 1 --max-time 1 "$health" >/dev/null 2>&1; then
     return 0
@@ -309,7 +309,7 @@ ensure_codemap_server() {
     if /usr/bin/curl -s --connect-timeout 1 --max-time 1 "$health" >/dev/null 2>&1; then
       exit 0
     fi
-    nohup npm --prefix "$codemap_root" run dev >/tmp/codemap-server.log 2>&1 &
+    nohup npm --prefix "$codetown_root" run dev >/tmp/codetown-server.log 2>&1 &
     for _ in 1 2 3 4 5 6 7 8 9 10; do
       sleep 0.5
       /usr/bin/curl -s --connect-timeout 1 --max-time 1 "$health" >/dev/null 2>&1 && break
@@ -335,7 +335,7 @@ INPUT='{"cwd":"'"$PWD"'/server","session_id":"x"}'
 source hooks/lib/project-id.sh; resolve_project_identity "$INPUT"
 echo "$PROJECT_ID | $PROJECT_NAME"
 ```
-Expected: `<repo root> | codemap` (git toplevel of the `server/` subdir is the repo root).
+Expected: `<repo root> | codetown` (git toplevel of the `server/` subdir is the repo root).
 
 - [ ] **Step 5: Commit**
 
@@ -354,15 +354,15 @@ git commit -m "feat(hooks): add project-identity and server auto-start helpers"
 
 - [ ] **Step 1: Wire helpers into `file-activity-hook.sh`**
 
-After `INPUT=$(cat)` and the `AGENT_ID` guard, insert (use the script's own dir to locate libs and the codemap root):
+After `INPUT=$(cat)` and the `AGENT_ID` guard, insert (use the script's own dir to locate libs and the codetown root):
 
 ```bash
 HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CODEMAP_ROOT="$(dirname "$HOOK_DIR")"
+CODETOWN_ROOT="$(dirname "$HOOK_DIR")"
 source "$HOOK_DIR/lib/project-id.sh"
 source "$HOOK_DIR/lib/ensure-server.sh"
 resolve_project_identity "$INPUT"
-ensure_codemap_server "$CODEMAP_ROOT"
+ensure_codetown_server "$CODETOWN_ROOT"
 ```
 
 Then add the project fields to BOTH JSON payloads (the `/api/activity` POST and the `/api/thinking` POST) by appending before the closing `}`:
@@ -605,7 +605,7 @@ git commit -m "feat(server): project-aware endpoints and projectId-tagged broadc
 Replace the `STATE_FILE` definition:
 
 ```typescript
-const STATE_DIR = path.join(os.homedir(), '.codemap');
+const STATE_DIR = path.join(os.homedir(), '.codetown');
 const STATE_FILE = path.join(STATE_DIR, 'state.json');
 ```
 
@@ -618,16 +618,16 @@ Add `import os from 'os';` at the top. In `saveAgentState()`, ensure the dir exi
 
 Agents already carry `projectId` (Task 5), so the persisted array is project-tagged automatically. On `loadAgentState()`, restored agents keep their `projectId`; their workspace will be (re)created lazily when their next event arrives.
 
-- [ ] **Step 2: Verify the repo no longer writes `.codemap-state.json`**
+- [ ] **Step 2: Verify the repo no longer writes `.codetown-state.json`**
 
 Run: `cd server && npx tsc --noEmit && echo OK`
-Expected: `OK`. (The old per-repo `.codemap-state.json` path is gone.)
+Expected: `OK`. (The old per-repo `.codetown-state.json` path is gone.)
 
 - [ ] **Step 3: Commit**
 
 ```bash
 git add server/src/index.ts
-git commit -m "feat(server): persist agent state centrally in ~/.codemap/state.json"
+git commit -m "feat(server): persist agent state centrally in ~/.codetown/state.json"
 ```
 
 ---
@@ -655,8 +655,8 @@ import path from 'path';
 
 describe('multi-project isolation', () => {
   it('keeps two projects file trees separate', () => {
-    const a = fs.mkdtempSync(path.join(os.tmpdir(), 'codemap-a-'));
-    const b = fs.mkdtempSync(path.join(os.tmpdir(), 'codemap-b-'));
+    const a = fs.mkdtempSync(path.join(os.tmpdir(), 'codetown-a-'));
+    const b = fs.mkdtempSync(path.join(os.tmpdir(), 'codetown-b-'));
     fs.writeFileSync(path.join(a, 'only-a.ts'), '');
     fs.writeFileSync(path.join(b, 'only-b.ts'), '');
     const reg = new ProjectRegistry();
@@ -712,7 +712,7 @@ Trigger activity in a second repo. `curl -s http://localhost:5174/api/projects |
 
 - [ ] **Step 3: Confirm no per-repo state file is written**
 
-Run: `ls .codemap-state.json 2>/dev/null && echo "LEAK" || echo "clean"; ls ~/.codemap/state.json`
+Run: `ls .codetown-state.json 2>/dev/null && echo "LEAK" || echo "clean"; ls ~/.codetown/state.json`
 Expected: `clean`, and the central file exists.
 
 ---

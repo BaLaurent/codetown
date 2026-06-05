@@ -5,7 +5,7 @@ import path from 'path';
 import { ProjectRegistry } from './project-registry.js';
 
 function makeProjectDir(): string {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'codemap-proj-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'codetown-proj-'));
   fs.writeFileSync(path.join(dir, 'a.txt'), 'hello');
   return dir;
 }

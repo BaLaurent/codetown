@@ -1,5 +1,5 @@
 #!/bin/bash
-# Ensures both the CodeMap server (:5174) and the Vite client (:5173) are
+# Ensures both the CodeTown server (:5174) and the Vite client (:5173) are
 # running, launching whichever is down, detached. Each is guarded by a port
 # check + its own flock so only one hook wins the cold-start race and an
 # already-running instance is never double-started. Best-effort: never blocks.
@@ -84,19 +84,19 @@ _ensure_service() {
   ) 9>"$lock"
 }
 
-ensure_codemap_server() {
-  local codemap_root="$1"   # absolute path to the codemap repo (contains package.json)
+ensure_codetown_server() {
+  local codetown_root="$1"   # absolute path to the codetown repo (contains package.json)
 
   # Server (:5174) — required to capture agent/activity events, so wait a few
   # seconds for it to come up since the events that follow this hook need it.
-  _ensure_service "CodeMap server" "http://localhost:5174/api/health" \
-    "/tmp/codemap-server.lock" "/tmp/codemap-server.log" 10 \
-    nohup npm --prefix "$codemap_root" run dev:server
+  _ensure_service "CodeTown server" "http://localhost:5174/api/health" \
+    "/tmp/codetown-server.lock" "/tmp/codetown-server.log" 10 \
+    nohup npm --prefix "$codetown_root" run dev:server
 
   # Client / Vite (:5173) — the visualisation itself. Nothing downstream depends
   # on it, so its wait is short (just enough to confirm the spawn and reset the
   # backoff); a fast Vite start breaks out in one check.
   _ensure_service "Vite client" "http://localhost:5173/" \
-    "/tmp/codemap-client.lock" "/tmp/codemap-client.log" 6 \
-    nohup npm --prefix "$codemap_root" run dev:client
+    "/tmp/codetown-client.lock" "/tmp/codetown-client.log" 6 \
+    nohup npm --prefix "$codetown_root" run dev:client
 }

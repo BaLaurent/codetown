@@ -2,28 +2,28 @@
   "version": 1,
   "hooks": {
     "beforeReadFile": [
-      { "command": "__CODEMAP_ROOT__/hooks/file-activity-hook.sh read-start" }
+      { "command": "__CODETOWN_ROOT__/hooks/file-activity-hook.sh read-start" }
     ],
     "afterFileEdit": [
-      { "command": "__CODEMAP_ROOT__/hooks/file-activity-hook.sh write-end" }
+      { "command": "__CODETOWN_ROOT__/hooks/file-activity-hook.sh write-end" }
     ],
     "beforeShellExecution": [
-      { "command": "__CODEMAP_ROOT__/hooks/thinking-hook.sh thinking-end" }
+      { "command": "__CODETOWN_ROOT__/hooks/thinking-hook.sh thinking-end" }
     ],
     "afterShellExecution": [
-      { "command": "__CODEMAP_ROOT__/hooks/thinking-hook.sh thinking-start" }
+      { "command": "__CODETOWN_ROOT__/hooks/thinking-hook.sh thinking-start" }
     ],
     "beforeMCPExecution": [
-      { "command": "__CODEMAP_ROOT__/hooks/thinking-hook.sh thinking-end" }
+      { "command": "__CODETOWN_ROOT__/hooks/thinking-hook.sh thinking-end" }
     ],
     "afterMCPExecution": [
-      { "command": "__CODEMAP_ROOT__/hooks/thinking-hook.sh thinking-start" }
+      { "command": "__CODETOWN_ROOT__/hooks/thinking-hook.sh thinking-start" }
     ],
     "afterAgentThought": [
-      { "command": "__CODEMAP_ROOT__/hooks/thinking-hook.sh thinking-start" }
+      { "command": "__CODETOWN_ROOT__/hooks/thinking-hook.sh thinking-start" }
     ],
     "beforeSubmitPrompt": [
-      { "command": "__CODEMAP_ROOT__/hooks/thinking-hook.sh thinking-end" }
+      { "command": "__CODETOWN_ROOT__/hooks/thinking-hook.sh thinking-end" }
     ]
   }
 }

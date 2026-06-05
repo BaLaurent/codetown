@@ -6,8 +6,8 @@ import path from 'path';
 
 describe('multi-project isolation', () => {
   it('keeps two projects file trees separate', () => {
-    const a = fs.mkdtempSync(path.join(os.tmpdir(), 'codemap-a-'));
-    const b = fs.mkdtempSync(path.join(os.tmpdir(), 'codemap-b-'));
+    const a = fs.mkdtempSync(path.join(os.tmpdir(), 'codetown-a-'));
+    const b = fs.mkdtempSync(path.join(os.tmpdir(), 'codetown-b-'));
     fs.writeFileSync(path.join(a, 'only-a.ts'), '');
     fs.writeFileSync(path.join(b, 'only-b.ts'), '');
     const reg = new ProjectRegistry();

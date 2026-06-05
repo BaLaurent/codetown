@@ -3,7 +3,7 @@
 # Called when a Cursor agent completes, aborts, or errors
 
 SERVER_URL="http://localhost:5174/api/thinking"
-LOG_FILE="/tmp/codemap-hook.log"
+LOG_FILE="/tmp/codetown-hook.log"
 
 # Read JSON from stdin
 INPUT=$(cat)
